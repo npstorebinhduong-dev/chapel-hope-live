@@ -1,9 +1,12 @@
+import type { AttendeeState } from "@chapel/shared";
 /** Only register locally bundled, properly licensed assets. Procedural fallbacks are always available. */
 export interface LicensedAsset {
   url: `/${string}.glb`;
   credit: string;
   license: string;
   scale: number;
+  animations?: Partial<Record<AttendeeState, string>>;
+  forwardRotation?: number;
 }
 export interface ChapelAssets {
   environment?: LicensedAsset;

@@ -1,0 +1,31 @@
+{
+  "viewport": "540x960",
+  "quality": "Balanced",
+  "renderer": "Chromium / SwiftShader software GPU",
+  "hardware": {
+    "platform": "linux",
+    "arch": "x64",
+    "cpus": 5,
+    "cpu": "AMD EPYC 9V74 80-Core Processor"
+  },
+  "samples": [
+    {
+      "attendees": 0,
+      "fps": 3.7
+    },
+    {
+      "attendees": 20,
+      "fps": 3.6
+    },
+    {
+      "attendees": 50,
+      "fps": 3.7
+    },
+    {
+      "attendees": 100,
+      "fps": 3.4
+    }
+  ],
+  "errors": [],
+  "notes": "FPS sampled with real-time animation. Arrival clocks advanced 120s to populate seating. Gift screenshots pause the server snapshot clock at 45% of the real effect duration for reproducible capture."
+}

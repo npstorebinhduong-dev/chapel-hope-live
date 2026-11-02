@@ -95,6 +95,11 @@ function LiveView() {
             {state ? en.offline : en.connecting}
           </div>
         )}
+        {active?.event.giftKey === "altar_100" && (
+          <div className="special-prayer" role="status">
+            {en.specialPrayer}
+          </div>
+        )}
         {ceremony && (
           <div className="ceremony-banner" role="status">
             <span>✦</span>

@@ -123,21 +123,6 @@ function SunShaft({ x, z, color }: { x: number; z: number; color: string }) {
 }
 export function GothicDetails() {
   const low = useQuality((s) => s.level === "low");
-  const flames = useRef<T.InstancedMesh>(null!);
-  const dummy = useMemo(() => new T.Object3D(), []);
-  useFrame(({ clock }) => {
-    for (let i = 0; i < 12; i++) {
-      dummy.position.set(i < 6 ? -5.4 : 5.4, 2.6, -10 + (i % 6) * 3.8);
-      dummy.scale.set(
-        0.035,
-        0.09 + Math.sin(clock.elapsedTime * 2 + i) * 0.012,
-        0.035,
-      );
-      dummy.updateMatrix();
-      flames.current.setMatrixAt(i, dummy.matrix);
-    }
-    flames.current.instanceMatrix.needsUpdate = true;
-  });
   return (
     <group>
       <mesh position={[0, 5.4, -13.18]} material={stoneMaterial}>
@@ -193,10 +178,6 @@ export function GothicDetails() {
       {[-4.9, 4.9].map((x) => (
         <PointedArch key={x} x={x} z={-13.02} width={2.1} height={5.6} />
       ))}
-      <instancedMesh ref={flames} args={[undefined, undefined, 12]}>
-        <sphereGeometry args={[1, 5, 5]} />
-        <meshBasicMaterial color="#ffd18a" />
-      </instancedMesh>
     </group>
   );
 }

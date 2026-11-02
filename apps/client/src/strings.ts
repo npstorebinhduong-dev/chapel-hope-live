@@ -1,4 +1,5 @@
 export const en = {
+  specialPrayer: "Special Prayer",
   quality: "Rendering quality",
   low: "Low",
   balanced: "Balanced",

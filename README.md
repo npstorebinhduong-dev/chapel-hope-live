@@ -1,4 +1,4 @@
-# Chapel of Hope LIVE v1.1 — EU Edition
+# Chapel of Hope LIVE v1.2 — Visual Production Edition
 
 A runnable, original procedural 3D **virtual chapel** for portrait 9:16 browser capture in OBS or LIVE Studio. Free `AMEN` comments add session visitors. Six optional mock gifts create visual moments. This is a fictional space, not a real parish or church service; gifts never promise blessings, healing or spiritual outcomes.
 
@@ -117,3 +117,11 @@ Original approved documents: [AGENTS.md](AGENTS.md), [technical specification](d
 See [the v1.1 changelog](docs/CHANGELOG_V1_1.md) and [licensed asset pipeline](docs/ASSET_PIPELINE.md). `/control` now offers 100-person bursts and Low / Balanced / High quality. The procedural crowd uses shared instanced articulated body parts, blended poses and distance-limited detail. The architecture adds layered pointed arches, masonry and stained-glass sunlight.
 
 After `npm run build`, run `node --import tsx scripts/stress-browser.ts` for filled 20/50/100-person screenshots and software-renderer FPS. Its output is in `artifacts/v1.1/`.
+
+## Bản v1.2: bàn giao hình ảnh để kiểm thử
+
+Đọc [báo cáo v1.2 bằng tiếng Việt](docs/CHANGELOG_V1_2.md) và [nguồn/giấy phép asset](docs/ASSET_LICENSES.md). Phiên này nâng cấp cảnh, vật liệu, nến/hoa, camera và FX; giữ nguyên gameplay. Nhân vật vẫn là fallback procedural, chưa có bộ GLB nam/nữ chân thực để xác nhận mức LIVE-ready.
+
+Chạy `npm ci`, `npm run dev`, mở `/` để xem LIVE và `/control` để gửi AMEN/quà, chọn chất lượng, mute/NPC/reset. Cổng dev là 5173; production dùng `npm run build` rồi `npm start`, cổng 3001. Các lệnh dùng được trong Windows PowerShell/cmd có Node 24.
+
+`npm run test:visual` (sau build) tạo ảnh 9:16 cho 50 người, nến, hoa, 100 xu và 500 xu, kèm số đo FPS vào `artifacts/v1.2/`. Bản ảnh bàn giao nằm trong `docs/screenshots/v1.2/`. Script cần Chromium ở `/usr/bin/chromium` hoặc biến `CHROMIUM_PATH` trỏ đến trình duyệt cài trên máy.

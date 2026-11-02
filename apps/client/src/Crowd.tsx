@@ -1,3 +1,4 @@
+import { torsoGeometry, headGeometry } from "./scene/AttendeeVisual";
 import { useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as T from "three";
@@ -23,7 +24,7 @@ const colors = [
   "#956e52",
   "#5d4b63",
 ];
-/** A bounded palette of shared geometry: two draw calls for the entire congregation. */
+/** A bounded palette of shared geometry: four shared draw calls for the entire procedural congregation. */
 export function Crowd({
   attendees,
   active,
@@ -33,6 +34,8 @@ export function Crowd({
 }) {
   const round = useRef<T.InstancedMesh>(null!),
     blocks = useRef<T.InstancedMesh>(null!);
+  const torsos = useRef<T.InstancedMesh>(null!),
+    heads = useRef<T.InstancedMesh>(null!);
   const level = useQuality((s) => s.level);
   const scratch = useMemo(
     () => ({
@@ -61,7 +64,9 @@ export function Crowd({
   );
   useFrame(({ camera }, delta) => {
     let ri = 0,
-      bi = 0;
+      bi = 0,
+      ti = 0,
+      hi = 0;
     const now = renderClock(),
       dt = Math.min(delta, 0.08),
       blend = 1 - Math.exp(-dt * 9);
@@ -87,7 +92,7 @@ export function Crowd({
     for (const id of scratch.states.keys())
       if (!ids.has(id)) scratch.states.delete(id);
     const put = (
-      kind: "round" | "box",
+      kind: "round" | "box" | "torso" | "head",
       x: number,
       y: number,
       z: number,
@@ -103,8 +108,22 @@ export function Crowd({
       o.scale.set(sx, sy, sz);
       o.updateMatrix();
       scratch.local.multiplyMatrices(scratch.root, o.matrix);
-      const mesh = kind === "round" ? round.current : blocks.current,
-        index = kind === "round" ? ri++ : bi++;
+      const mesh =
+          kind === "torso"
+            ? torsos.current
+            : kind === "head"
+              ? heads.current
+              : kind === "round"
+                ? round.current
+                : blocks.current,
+        index =
+          kind === "torso"
+            ? ti++
+            : kind === "head"
+              ? hi++
+              : kind === "round"
+                ? ri++
+                : bi++;
       mesh.setMatrixAt(index, scratch.local);
       mesh.setColorAt(index, scratch.color.set(color));
     };
@@ -115,14 +134,19 @@ export function Crowd({
       const event = active?.presentation && !presenter ? null : active;
       const actor =
         presenter && active ? { ...a, userId: active.event.userId } : a;
-      const pose = npc
-        ? {
-            position: destination(a),
-            state:
-              active?.event.giftKey === "ceremony_500" ? "kneeling" : "seated",
-            visible: true,
-          }
-        : attendeePose(actor, now, event);
+      const pose =
+        presenter && active?.event.giftKey === "rose_5"
+          ? { position: [3.5, 0, -8.25], state: "gift_reacting", visible: true }
+          : npc
+            ? {
+                position: destination(a),
+                state:
+                  active?.event.giftKey === "ceremony_500"
+                    ? "kneeling"
+                    : "seated",
+                visible: true,
+              }
+            : attendeePose(actor, now, event);
       let s = scratch.states.get(renderId);
       if (!s) {
         s = {
@@ -176,7 +200,7 @@ export function Crowd({
       const coat = colors[a.variant % 12],
         skin = ["#ddb496", "#b58265", "#855b45", "#cc997a"][a.variant % 4];
       put(
-        "round",
+        "torso",
         0,
         hip + 0.27 + breath,
         0,
@@ -187,7 +211,7 @@ export function Crowd({
         -s.kneel * 0.16,
       );
       put(
-        "round",
+        "head",
         0,
         hip + 0.69 + breath,
         -s.kneel * 0.09,
@@ -272,6 +296,25 @@ export function Crowd({
           );
       }
       if (detailed) {
+        for (const side of [-1, 1]) {
+          put(
+            "round",
+            side * 0.047,
+            hip + 0.71,
+            -0.113,
+            0.012,
+            0.008,
+            0.008,
+            "#40362c",
+          );
+          put("round", side * 0.118, hip + 0.68, 0, 0.025, 0.045, 0.025, skin);
+        }
+        if (a.variant % 3 === 1) {
+          put("round", 0, hip + 0.66, 0.082, 0.135, 0.2, 0.075, "#564034");
+        }
+        if (a.variant % 3 === 2) {
+          put("round", 0, hip + 0.76, 0.12, 0.07, 0.1, 0.09, "#312b27");
+        }
         put("box", 0, hip + 0.44, -0.14, 0.035, 0.23, 0.012, "#c4b49a");
         put("round", 0, hip + 0.67, -0.125, 0.025, 0.035, 0.035, skin);
       }
@@ -279,6 +322,8 @@ export function Crowd({
     for (const [mesh, count] of [
       [round.current, ri],
       [blocks.current, bi],
+      [torsos.current, ti],
+      [heads.current, hi],
     ] as const) {
       mesh.count = count;
       mesh.instanceMatrix.needsUpdate = true;
@@ -288,6 +333,20 @@ export function Crowd({
   });
   return (
     <>
+      <instancedMesh
+        ref={torsos}
+        args={[torsoGeometry, undefined, 120]}
+        frustumCulled={false}
+      >
+        <meshStandardMaterial roughness={0.94} />
+      </instancedMesh>
+      <instancedMesh
+        ref={heads}
+        args={[headGeometry, undefined, 120]}
+        frustumCulled={false}
+      >
+        <meshStandardMaterial roughness={0.82} />
+      </instancedMesh>
       <instancedMesh
         ref={round}
         args={[undefined, undefined, 2400]}
