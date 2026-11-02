@@ -1,0 +1,12 @@
+{
+  "result": "passed",
+  "environment": "Linux Node; extracted Windows distribution without node_modules",
+  "http200": [
+    "/api/health",
+    "/",
+    "/control"
+  ],
+  "AMENWaitingOnly": true,
+  "ownedGracefulShutdown": true,
+  "windowsLauncherExecuted": false
+}

@@ -1,0 +1,18 @@
+[
+ {"event":"chat","data":{"userId":"viewer-a","nickname":"Anna","comment":"AMEN","msgId":"chat-a"}},
+ {"event":"chat","data":{"userId":"viewer-a","nickname":"Anna","comment":"2","msgId":"chat-b"}},
+ {"event":"chat","data":{"userId":"viewer-b","nickname":"Luca","comment":"1","msgId":"chat-c"}},
+ {"event":"gift","data":{"userId":"viewer-a","nickname":"Anna","giftId":101,"giftType":1,"repeatCount":1,"repeatEnd":false,"groupId":"streak-a","msgId":"progress"}},
+ {"event":"gift","data":{"userId":"viewer-a","nickname":"Anna","giftId":101,"giftType":1,"repeatCount":3,"repeatEnd":true,"groupId":"streak-a","msgId":"final-a"}},
+ {"event":"gift","data":{"userId":"viewer-a","nickname":"Anna","giftId":101,"giftType":1,"repeatCount":3,"repeatEnd":true,"groupId":"streak-a","msgId":"final-retry"}},
+ {"event":"gift","data":{"userId":"viewer-b","nickname":"Luca","giftId":102,"diamondCount":5,"msgId":"prayer"}},
+ {"event":"gift","data":{"userId":"viewer-b","nickname":"Luca","giftId":103,"diamondCount":5,"msgId":"rose"}},
+ {"event":"gift","data":{"userId":"viewer-b","nickname":"Luca","giftId":104,"diamondCount":10,"msgId":"bell"}},
+ {"event":"gift","data":{"userId":"viewer-b","nickname":"Luca","giftId":105,"diamondCount":100,"msgId":"altar"}},
+ {"event":"gift","data":{"userId":"viewer-b","nickname":"Luca","giftId":106,"diamondCount":500,"msgId":"ceremony"}},
+ {"event":"gift","data":{"userId":"viewer-b","giftId":999,"giftName":"Unmapped gift","diamondCount":5,"msgId":"unknown"}},
+ {"event":"gift","data":{"userId":"viewer-b","giftId":101,"repeatCount":0,"msgId":"invalid"}},
+ {"event":"gift","data":{"userId":"viewer-b","giftId":101}},
+ {"event":"chat","data":{"userId":"viewer-b","comment":"gift rose 500","msgId":"text-only"}},
+ {"event":"other","data":{}}
+]

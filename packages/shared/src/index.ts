@@ -38,7 +38,7 @@ export const GIFTS = {
     label: "Special Prayer at Altar",
     short: "Altar Prayer",
     icon: "✧",
-    duration: 6500,
+    duration: 9500,
     priority: 2,
   },
   ceremony_500: {
@@ -46,13 +46,14 @@ export const GIFTS = {
     label: "Grand Ceremony Moment",
     short: "Grand Ceremony",
     icon: "✦",
-    duration: 7000,
+    duration: 11000,
     priority: 3,
   },
 } as const;
 export type GiftKey = keyof typeof GIFTS;
 export const giftKeys = Object.keys(GIFTS) as GiftKey[];
 export type CommentEvent = {
+  source?: "mock" | "tikfinity";
   type: "comment";
   eventId: string;
   userId: string;
@@ -61,6 +62,7 @@ export type CommentEvent = {
   timestamp: number;
 };
 export type GiftEvent = {
+  source?: "mock" | "tikfinity";
   type: "gift";
   eventId: string;
   userId: string;
@@ -167,6 +169,8 @@ export interface ActiveGift {
   effectApplied?: boolean;
 }
 export interface Snapshot {
+  production?: import("./production.ts").ProductionSettings;
+  source?: import("./production.ts").SourceStatus;
   now: number;
   revision: number;
   attendees: Attendee[];

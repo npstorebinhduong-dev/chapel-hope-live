@@ -11,10 +11,39 @@ import {
 } from "@chapel/shared";
 import { ChapelEngine } from "../../../packages/shared/src/engine.ts";
 import path from "node:path";
-import { fillGiftedSeats } from "../../../packages/shared/src/fixtures.ts";
+import {
+  fillGiftedSeats,
+  fillAcceptance,
+} from "../../../packages/shared/src/fixtures.ts";
 
-export function createChapelServer() {
+import { TikFinityEventAdapter } from "./tikfinity.ts";
+import { operatorConfig } from "./operatorConfig.ts";
+import {
+  productionSchema,
+  sourceConfigSchema,
+} from "../../../packages/shared/src/production.ts";
+export function createChapelServer(
+  options: {
+    configFile?: string;
+    retryBase?: number;
+    shutdownToken?: string;
+    onShutdown?: () => void;
+  } = {},
+) {
   const engine = new ChapelEngine();
+  const config = operatorConfig(options.configFile);
+  let production = config.production;
+  const adapter = new TikFinityEventAdapter(
+    (e) => (e.type === "comment" ? engine.comment(e) : engine.gift(e)),
+    () => {},
+    options.retryBase,
+  );
+  adapter.configure(config.source);
+  const snapshot = () => ({
+    ...engine.snapshot(),
+    production,
+    source: adapter.status,
+  });
   const app = express(),
     server = createServer(app);
   app.disable("x-powered-by");
@@ -50,7 +79,19 @@ export function createChapelServer() {
     if (req.method === "POST") bucket--;
     next();
   });
-  const metrics = new Map<WebSocket, { fps: number; renderer: string }>();
+  const metrics = new Map<
+    WebSocket,
+    {
+      fps: number;
+      renderer: string;
+      at: number;
+      canvas: boolean;
+      ratio: number;
+      audio: boolean;
+      voice: boolean;
+      voiceStatus: string;
+    }
+  >();
   const wss = new WebSocketServer({ noServer: true, maxPayload: 1024 });
   server.on("upgrade", (req, socket, head) => {
     const origin = req.headers.origin;
@@ -81,7 +122,7 @@ export function createChapelServer() {
   const broadcast = () => {
     const message = {
       type: "snapshot",
-      snapshot: engine.snapshot(),
+      snapshot: snapshot(),
       metrics: [...metrics.values()],
     };
     for (const ws of wss.clients) send(ws, message);
@@ -89,7 +130,7 @@ export function createChapelServer() {
   wss.on("connection", (ws) => {
     send(ws, {
       type: "snapshot",
-      snapshot: engine.snapshot(),
+      snapshot: snapshot(),
       metrics: [...metrics.values()],
     });
     let lastMetric = 0;
@@ -107,6 +148,12 @@ export function createChapelServer() {
           metrics.set(ws, {
             fps: Math.round(data.fps),
             renderer: String(data.renderer).slice(0, 40),
+            at: Date.now(),
+            canvas: data.canvas === true,
+            ratio: Number.isFinite(data.ratio) ? data.ratio : 0,
+            audio: data.audio === true,
+            voice: data.voice === true,
+            voiceStatus: String(data.voiceStatus ?? "unknown").slice(0, 32),
           });
       } catch {
         /* Ignore malformed telemetry. */
@@ -118,12 +165,79 @@ export function createChapelServer() {
   app.get("/health", (_req, res) =>
     res.json({
       ok: true,
-      mode: "mock",
+      mode: adapter.status.mode,
+      product: "chapel-hope-live",
+      version: "1.6.0",
+      source: adapter.status.connection,
       viewers: engine.attendees.size,
       queue: engine.queue.length,
     }),
   );
-  app.get("/state", (_req, res) => res.json(engine.snapshot()));
+  app.get("/state", (_req, res) => res.json(snapshot()));
+  app.use("/mock", (req, res, next) => {
+    if (adapter.status.mode !== "mock" && req.path !== "/control") {
+      res
+        .status(409)
+        .json({ error: "Switch to Mock before sending test events" });
+      return;
+    }
+    next();
+  });
+  app.post("/launcher/stop", (req, res) => {
+    if (
+      !options.shutdownToken ||
+      req.get("X-Chapel-Launcher") !== options.shutdownToken
+    ) {
+      res.status(403).json({ error: "not_launcher_owner" });
+      return;
+    }
+    res.json({ ok: true });
+    setTimeout(() => options.onShutdown?.(), 100);
+  });
+  app.post("/production", (req, res) => {
+    const parsed = productionSchema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: "invalid_production_settings" });
+      return;
+    }
+    config.save(parsed.data, adapter.status);
+    production = parsed.data;
+    broadcast();
+    res.json({ ok: true });
+  });
+  app.post("/source", (req, res) => {
+    const parsed = sourceConfigSchema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: "invalid_source_loopback_or_mapping" });
+      return;
+    }
+    if (
+      parsed.data.mode !== adapter.status.mode &&
+      engine.attendees.size &&
+      req.body.reset !== true
+    ) {
+      res.status(409).json({ error: "Confirm reset before changing source" });
+      return;
+    }
+    config.save(production, parsed.data);
+    if (parsed.data.mode !== adapter.status.mode) {
+      engine.control("reset");
+      adapter.clearSession();
+    }
+    adapter.configure(parsed.data);
+    broadcast();
+    res.json({ ok: true });
+  });
+  app.post("/source/connect", (_req, res) => {
+    adapter.connect();
+    broadcast();
+    res.json({ ok: true });
+  });
+  app.post("/source/disconnect", (_req, res) => {
+    adapter.disconnect();
+    broadcast();
+    res.json({ ok: true });
+  });
   app.post("/mock/comment", (req, res) => {
     const input = commentSchema.safeParse(req.body);
     if (!input.success) {
@@ -136,6 +250,7 @@ export function createChapelServer() {
       ...input.data,
       eventId: input.data.eventId ?? randomUUID(),
       type: "comment" as const,
+      source: "mock" as const,
       timestamp: Date.now(),
     };
     const result = engine.comment(event);
@@ -154,6 +269,7 @@ export function createChapelServer() {
       ...input.data,
       eventId: input.data.eventId ?? randomUUID(),
       type: "gift" as const,
+      source: "mock" as const,
       coinValue: GIFTS[input.data.giftKey].coins,
       timestamp: Date.now(),
     };
@@ -179,6 +295,7 @@ export function createChapelServer() {
     for (let i = 0; i < input.data.count; i++) {
       const result = engine.comment({
         type: "comment",
+        source: "mock",
         eventId: `${batch}-${i}`,
         userId: `mock-${batch}-${i}`,
         username: `Guest ${engine.attendees.size + 1}`,
@@ -195,6 +312,11 @@ export function createChapelServer() {
       capacity: 100,
     });
   });
+  app.post("/mock/acceptance", (_req, res) => {
+    fillAcceptance(engine);
+    broadcast();
+    res.json({ status: "accepted" });
+  });
   app.post("/mock/full-seat", (_req, res) => {
     const result = fillGiftedSeats(engine);
     broadcast();
@@ -206,6 +328,7 @@ export function createChapelServer() {
       res.status(400).json({ error: "invalid_control" });
       return;
     }
+    if (input.data.action === "reset") adapter.clearSession();
     engine.control(
       input.data.action,
       "enabled" in input.data ? input.data.enabled : undefined,
@@ -242,8 +365,10 @@ export function createChapelServer() {
     app,
     server,
     engine,
+    adapter,
     close: async () => {
       clearInterval(timer);
+      adapter.disconnect();
       for (const ws of wss.clients) ws.terminate();
       await new Promise<void>((resolve) => wss.close(() => resolve()));
       if (server.listening)

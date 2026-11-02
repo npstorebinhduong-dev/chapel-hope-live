@@ -1061,3 +1061,122 @@ dd {
   font-size: 11px;
   color: #bdb199;
 }
+/* Production subtitle safe zone: below gift guide, above rose window/altar. */
+.wish-banner {
+  position: absolute;
+  z-index: 12;
+  top: 29%;
+  left: 5%;
+  width: 90%;
+  padding: 0.5rem 0.7rem;
+  box-sizing: border-box;
+  text-align: center;
+  border: 1px solid #c6a46b80;
+  background: linear-gradient(90deg, #1c1714e8, #332719f5, #1c1714e8);
+  color: #ffedc9;
+  border-radius: 6px;
+  animation: wish-in 0.6s ease both;
+  pointer-events: none;
+}
+.wish-banner strong {
+  display: block;
+  font-size: 2.6cqw;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.wish-banner p {
+  margin: 0.25rem 0 0;
+  font-size: 3cqw;
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+@keyframes wish-in {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.production-panel [role="tablist"] {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-bottom: 1rem;
+}
+.production-panel [aria-selected="true"] {
+  border-color: #d1b274;
+  color: #ffe5af;
+}
+.production-panel label {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0.7rem 0;
+}
+.production-panel input,
+.production-panel select {
+  min-width: 0;
+  max-width: 65%;
+}
+.production-panel table {
+  width: 100%;
+  text-align: left;
+  font-size: 0.85rem;
+}
+.production-panel td {
+  padding: 0.3rem;
+}
+.production-panel td input {
+  max-width: 100%;
+  width: 100%;
+  box-sizing: border-box;
+}
+.production-panel dl > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.4rem;
+  border-bottom: 1px solid #b99d6533;
+  font-size: 0.8rem;
+}
+.production-panel dd {
+  max-width: 65%;
+  margin: 0;
+}
+
+.live-frame > .live-footer {
+  position: absolute;
+  left: 4%;
+  right: 4%;
+  bottom: 0.4%;
+  z-index: 11;
+  padding: 0.4cqw 1cqw;
+  border: 0;
+  background: #17130b80;
+}
+.live-frame:has(.wish-banner) .supporters {
+  visibility: hidden;
+}
+.wish-banner[data-priority="3"] {
+  border-color: #e7c77e;
+  box-shadow: 0 0 2cqw #e9ba5626;
+}
+.audio-hint {
+  top: 19%;
+  font-size: 1.5cqw;
+}
+
+.wish-banner[data-fading="true"] {
+  animation: none;
+  opacity: 0;
+  transition: opacity 0.5s ease;
+}

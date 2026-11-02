@@ -10,6 +10,7 @@ export function fillGiftedSeats(engine: ChapelEngine, now = Date.now()) {
     engine.gift(
       {
         type: "gift",
+        source: "mock",
         giftKey: "prayer_5",
         eventId: `fixture-gift-${i}`,
         userId: `fixture-${i}`,
@@ -34,4 +35,40 @@ export function fillGiftedSeats(engine: ChapelEngine, now = Date.now()) {
     until: now + 3500,
   };
   return { status: "completed", joined: engine.attendees.size };
+}
+
+export function fillAcceptance(engine: ChapelEngine, now = Date.now()) {
+  engine.control("reset");
+  for (let i = 0; i < 50; i++)
+    engine.comment({
+      type: "comment",
+      source: "mock",
+      eventId: `accept-${now}-${i}`,
+      userId: `accept-${i}`,
+      username: `Guest ${i + 1}`,
+      text: "AMEN",
+      timestamp: now,
+    });
+  const keys = [
+    "candle_1",
+    "prayer_5",
+    "rose_5",
+    "bell_10",
+    "altar_100",
+  ] as const;
+  keys.forEach((giftKey, i) =>
+    engine.gift({
+      type: "gift",
+      source: "mock",
+      eventId: `accept-gift-${now}-${i}`,
+      userId: `accept-${i}`,
+      username: `Guest ${i + 1}`,
+      giftKey,
+      coinValue: GIFTS[giftKey].coins,
+      repeatCount: 1,
+      timestamp: now,
+    }),
+  );
+
+  return { status: "accepted" };
 }

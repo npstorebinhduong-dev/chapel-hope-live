@@ -1,0 +1,9 @@
+{
+  "result": "passed",
+  "parser": "PowerShell 7.4.6 official Linux release; SHA256 verified",
+  "scripts": [
+    "windows/Start-Chapel.ps1",
+    "windows/Stop-Chapel.ps1"
+  ],
+  "windowsExecuted": false
+}

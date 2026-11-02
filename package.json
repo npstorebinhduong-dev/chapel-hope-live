@@ -1,7 +1,7 @@
 {
   "name": "chapel-hope-live",
   "private": true,
-  "version": "1.4.0",
+  "version": "1.6.0",
   "workspaces": [
     "apps/*",
     "packages/*"
@@ -18,7 +18,12 @@
     "start": "npm run start -w @chapel/server",
     "test:visual": "node --import tsx scripts/queue-browser.ts",
     "build:preview": "node scripts/build-preview.mjs",
-    "test:preview": "node --import tsx scripts/preview-smoke.ts"
+    "test:preview": "node --import tsx scripts/preview-smoke.ts",
+    "build:windows": "npm run build && node scripts/build-windows.mjs",
+    "test:production": "node --import tsx scripts/production-browser.ts",
+    "test:soak": "node --import tsx scripts/soak-v16.ts",
+    "package:windows": "npm run build:windows && python3 scripts/package-windows.py",
+    "test:recorded": "node --import tsx scripts/recorded-browser.ts"
   },
   "devDependencies": {
     "@playwright/test": "^1.56.0",

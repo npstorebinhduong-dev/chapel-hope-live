@@ -44,3 +44,7 @@ Repository không có bộ GLB nam/nữ chất lượng cao, skinning và các c
 ## Âm thanh v1.4 / Task #05–06
 
 `apps/client/src/audio/runtime.ts` tạo pad sine gốc, room tone bằng noise, room impulse và SFX bằng Web Audio. Không dùng bài hát, bản thu organ/choir/chuông tải từ ngoài; không gán giấy phép nhạc bên thứ ba cho âm tổng hợp. Ba PNG và atlas v1.3 được giữ nguyên. Âm tổng hợp và sprite vẫn có giới hạn về độ chân thực; đây không phải bản ghi thánh lễ thật.
+
+## v1.6 Production LIVE
+
+Giữ nguyên các atlas/plate 2,5D đã khai báo. Các vật dâng, chuyển động cánh hoa, light shafts và glow bổ sung được vẽ bằng code Canvas trong dự án. Nhạc/SFX/choir là synthesis nguyên tác; không tải bản thu thương mại hoặc giọng giáo sĩ. Xem `docs/AUDIO_VOICES_AND_LICENSES.md` về Browser Speech và điều kiện của clip operator cung cấp.

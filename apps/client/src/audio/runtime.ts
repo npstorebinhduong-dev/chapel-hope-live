@@ -19,8 +19,20 @@ class ChapelAudio {
   private lastFoot = -1;
   private lastGift = "";
   private muted = true;
-  private settings: AudioMix = { music: 0.22, ambient: 0.14, sfx: 0.45 };
+  private settings: AudioMix = {
+    master: 1,
+    music: 0.22,
+    ambient: 0.14,
+    sfx: 0.45,
+    voice: 0.85,
+  };
+  private ducked = false;
+  private lastBeat = -1;
   triggers = 0;
+  duck(active: boolean) {
+    this.ducked = active;
+    this.sync(this.settings, this.muted);
+  }
   async unlock() {
     if (!this.context || this.context.state === "closed") this.initialize();
     await this.context!.resume();
@@ -86,7 +98,9 @@ class ChapelAudio {
     for (let i = 0; i < 3; i++) {
       const o = c.createOscillator(),
         g = c.createGain();
-      o.type = "sine";
+      const real = new Float32Array([0, 0, 0, 0, 0]),
+        imag = new Float32Array([0, 1, 0.22, 0.08, 0.04]);
+      o.setPeriodicWave(c.createPeriodicWave(real, imag));
       o.frequency.value = [130.81, 164.81, 196][i];
       g.gain.value = 0.07;
       o.connect(g);
@@ -101,15 +115,44 @@ class ChapelAudio {
     this.muted = muted;
     const c = this.context;
     if (!c) return;
-    this.master.gain.setTargetAtTime(muted ? 0 : 0.55, c.currentTime, 0.08);
-    this.music.gain.setTargetAtTime(mix.music, c.currentTime, 0.3);
-    this.ambient.gain.setTargetAtTime(mix.ambient * 0.15, c.currentTime, 0.3);
+    this.master.gain.setTargetAtTime(
+      muted ? 0 : 0.55 * mix.master,
+      c.currentTime,
+      0.08,
+    );
+    this.music.gain.setTargetAtTime(
+      mix.music * (this.ducked ? 0.316 : 1),
+      c.currentTime,
+      0.3,
+    );
+    this.ambient.gain.setTargetAtTime(
+      mix.ambient * 0.15 * (this.ducked ? 0.5 : 1),
+      c.currentTime,
+      0.3,
+    );
     this.sfx.gain.setTargetAtTime(mix.sfx, c.currentTime, 0.08);
   }
   tick() {
     const c = this.context;
     if (!c || c.state !== "running") return;
     const chord = Math.floor(c.currentTime / 12) % 4;
+    const beat = Math.floor(c.currentTime / 1.5);
+    if (beat !== this.lastBeat) {
+      this.lastBeat = beat;
+      const notes = [
+        [261.63, 329.63, 392, 523.25],
+        [220, 293.66, 349.23, 440],
+        [261.63, 349.23, 440, 523.25],
+        [196, 293.66, 392, 493.88],
+      ];
+      this.tone(
+        notes[chord][[0, 2, 1, 3, 2, 1, 0, 2][beat % 8]],
+        1.9,
+        0.055,
+        false,
+        "music",
+      );
+    }
     if (chord !== this.lastChord) {
       this.lastChord = chord;
       const chords = [
@@ -128,13 +171,15 @@ class ChapelAudio {
     duration: number,
     volume: number,
     noise = false,
+    bus: "music" | "sfx" = "sfx",
+    delay = 0,
   ) {
     const c = this.context;
     if (
       !c ||
       c.state !== "running" ||
       this.muted ||
-      this.settings.sfx === 0 ||
+      this.settings[bus] === 0 ||
       this.voices.size >= 24
     )
       return;
@@ -144,14 +189,14 @@ class ChapelAudio {
       source.type = "sine";
       source.frequency.value = frequency;
     } else source.buffer = this.noiseBuffer;
-    const t = c.currentTime;
+    const t = c.currentTime + delay;
     g.gain.setValueAtTime(0, t);
     g.gain.linearRampToValueAtTime(volume, t + 0.015);
     g.gain.exponentialRampToValueAtTime(0.00001, t + duration);
     source.connect(g);
-    g.connect(this.sfx);
+    g.connect(bus === "music" ? this.music : this.sfx);
     this.voices.add(source);
-    source.start();
+    source.start(t);
     source.stop(t + duration + 0.03);
     source.onended = () => {
       source.disconnect();
@@ -159,13 +204,18 @@ class ChapelAudio {
       this.voices.delete(source);
     };
   }
-  quiet(kind: "arrival" | "seat" | "stand" | "foot") {
+  quiet(kind: "arrival" | "seat" | "stand" | "foot" | "kneel") {
     const t = this.context?.currentTime ?? -1;
     if (t < 0 || this.muted || this.settings.sfx === 0) return;
     if (kind === "foot") {
       if (t - this.lastFoot < 0.55) return;
       this.lastFoot = t;
-      this.tone(0, 0.13, 0.12, true);
+      this.tone(
+        0,
+        0.11 + (this.triggers % 3) * 0.015,
+        0.09 + (this.triggers % 2) * 0.03,
+        true,
+      );
     } else {
       if (t - this.lastQuiet < 0.7) return;
       this.lastQuiet = t;
@@ -186,6 +236,14 @@ class ChapelAudio {
         [5.4, 0.03],
       ])
         this.tone(392 * ratio, 2.4, volume);
+    if (key === "ceremony_500") {
+      // Original vowel-like additive choir, not a recorded human choir.
+      for (const f of [130.81, 164.81, 196]) {
+        this.tone(f, 5, 0.07, false, "sfx", 1.2);
+        this.tone(f * 2, 4.8, 0.025, false, "sfx", 1.2);
+        this.tone(f * 3, 4.4, 0.008, false, "sfx", 1.2);
+      }
+    }
     if (key === "candle_1") {
       this.tone(0, 0.3, 0.08, true);
       this.tone(523.25, 0.8, 0.035);
@@ -206,6 +264,13 @@ class ChapelAudio {
       values.reduce((n, v) => n + v * v, 0) / values.length,
     );
     return {
+      ducked: this.ducked,
+      musicGain: this.music?.gain.value ?? 0,
+      ambientGain: this.ambient?.gain.value ?? 0,
+      sfxGain: this.sfx?.gain.value ?? 0,
+      masterGain: this.master?.gain.value ?? 0,
+      persistentSources: this.pads.length + (this.noise ? 1 : 0),
+      peak: Math.max(...values.map(Math.abs)),
       contextTime: this.context?.currentTime ?? 0,
       chord: this.lastChord,
       running: this.context?.state === "running",
@@ -233,6 +298,8 @@ class ChapelAudio {
     this.context = null;
     this.lastGift = "";
     this.lastChord = -1;
+    this.lastBeat = -1;
+    this.ducked = false;
     this.lastFoot = this.lastQuiet = -1;
   }
 }

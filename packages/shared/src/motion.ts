@@ -52,7 +52,7 @@ export function queueExitPath(start: Vec3): Vec3[] {
 }
 export function giftApproach(a: Attendee, key: GiftKey, now: number): Vec3[] {
   const zone: Vec3 = [
-    key === "candle_1" ? -3.5 : key === "rose_5" ? 3.5 : 0,
+    key === "candle_1" ? -5.5 : key === "rose_5" ? 5.3 : 0,
     0,
     -9,
   ];
@@ -151,7 +151,12 @@ export function attendeePose(
   return {
     position: destination(a),
     state:
-      effect && active.event.giftKey === "ceremony_500"
+      effect &&
+      (active.event.giftKey === "ceremony_500" ||
+        (active.event.giftKey === "bell_10" &&
+          a.seat !== null &&
+          a.seat < 32 &&
+          now > active.startedAt + (a.variant % 4) * 100))
         ? "kneeling"
         : a.seat === null
           ? "inside_standing_wait"

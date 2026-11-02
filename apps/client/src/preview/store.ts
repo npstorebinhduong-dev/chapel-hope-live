@@ -7,21 +7,32 @@ import {
   controlSchema,
   type Snapshot,
 } from "@chapel/shared";
-import { fillGiftedSeats } from "../../../../packages/shared/src/fixtures";
+import {
+  fillGiftedSeats,
+  fillAcceptance,
+} from "../../../../packages/shared/src/fixtures";
 import { en } from "../strings";
 
+import {
+  defaultProduction,
+  defaultSource,
+  productionSchema,
+} from "../../../../packages/shared/src/production";
+let production = defaultProduction();
 // Only bundled by build-preview: the normal app continues using HTTP/WebSocket.
 const engine = new ChapelEngine();
 let timer: ReturnType<typeof setInterval> | undefined;
 let initialized = false;
 export const useSession = create<{
   snapshot: Snapshot | null;
+  liveReports: import("../store").LiveReport[];
   connected: boolean;
   receivedAt: number;
   fps: number[];
   set: (snapshot: Snapshot, fps: number[]) => void;
 }>((set) => ({
   snapshot: null,
+  liveReports: [],
   connected: false,
   receivedAt: 0,
   fps: [],
@@ -29,7 +40,12 @@ export const useSession = create<{
     set({ snapshot, fps, connected: true, receivedAt: performance.now() }),
 }));
 function publish() {
-  useSession.getState().set(engine.snapshot(), useSession.getState().fps);
+  useSession
+    .getState()
+    .set(
+      { ...engine.snapshot(), production, source: defaultSource() },
+      useSession.getState().fps,
+    );
 }
 export function connectSession() {
   if (!initialized) {
@@ -66,6 +82,20 @@ export async function post(
   data: unknown,
 ): Promise<{ status?: string; joined?: number }> {
   const timestamp = Date.now();
+  if (endpoint === "production") {
+    production = productionSchema.parse(data);
+    publish();
+    return { status: "accepted" };
+  }
+  if (endpoint.startsWith("source"))
+    throw new Error(
+      "TikFinity requires the Windows production launcher; this HTML is Mock only.",
+    );
+  if (endpoint === "mock/acceptance") {
+    const result = fillAcceptance(engine);
+    publish();
+    return result;
+  }
   if (endpoint === "mock/full-seat") {
     const result = fillGiftedSeats(engine);
     publish();

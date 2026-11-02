@@ -9,6 +9,10 @@ import { unlockAudio } from "./audio";
 import { useSceneAudio } from "./audio/useSceneAudio";
 import { useAudioSettings, type AudioLayer } from "./audio/settings";
 import { en } from "./strings";
+import { ui, giftLabels } from "./locales";
+import { defaultProduction } from "../../../packages/shared/src/production";
+import { useVoiceState } from "./voice/runtime";
+import { ProductionPanel } from "./ProductionPanel";
 
 export function GiftIcon({ giftKey }: { giftKey: GiftKey }) {
   const common = {
@@ -54,6 +58,9 @@ function LiveView() {
   const state = useSession((s) => s.snapshot),
     connected = useSession((s) => s.connected);
   const [audio, setAudio] = useState(false);
+  const production = state?.production ?? defaultProduction();
+  const en = ui[production.locale];
+  const voice = useVoiceState();
   const active =
     state?.active &&
     state.now >= state.active.startedAt &&
@@ -70,6 +77,7 @@ function LiveView() {
       <div
         className={`live-frame ${ceremony ? "ceremony" : ""}`}
         data-testid="live-frame"
+        lang={production.locale}
         onPointerDown={() => {
           void unlockAudio()
             .then(setAudio)
@@ -123,30 +131,29 @@ function LiveView() {
             {state ? en.offline : en.connecting}
           </div>
         )}
-        {active?.event.giftKey === "altar_100" && (
-          <div className="special-prayer" role="status">
-            {en.specialPrayer}
-          </div>
-        )}
-        {ceremony && (
-          <div className="ceremony-banner" role="status">
-            <span>✦</span>
-            <h2>{en.ceremony}</h2>
-            <p>
-              {active.event.username} · {en.ceremonyNote}
-            </p>
+        {production.bannerEnabled && voice.banner && (
+          <div
+            className="wish-banner"
+            role="status"
+            data-testid="wish-banner"
+            lang={voice.banner.locale}
+            data-locale={voice.banner.locale}
+            data-fading={voice.fading}
+            data-speaking={voice.speaking}
+            data-priority={voice.banner.priority}
+            key={voice.banner.id}
+          >
+            <strong>{voice.banner.name}</strong>
+            <p>{voice.banner.text}</p>
           </div>
         )}
         <div className="live-bottom">
           <div className="activity" role="status" data-testid="activity">
-            {state?.toast ? (
-              <>
-                <span className="activity-star">✧</span>
-                {state.toast.text}
-              </>
-            ) : (
-              <span className="quiet">{en.quiet}</span>
-            )}
+            <span className="quiet">
+              {active
+                ? giftLabels[production.locale][active.event.giftKey]
+                : en.quiet}
+            </span>
           </div>
           <div className="gift-guide" aria-label={en.labelGift}>
             {giftKeys.map((key) => (
@@ -157,7 +164,9 @@ function LiveView() {
                     {GIFTS[key].coins}
                     <span className="coin"> ◈</span>
                   </span>
-                  <span className="gift-label">{GIFTS[key].short}</span>
+                  <span className="gift-label">
+                    {giftLabels[production.locale][key]}
+                  </span>
                 </div>
               </div>
             ))}
@@ -178,11 +187,15 @@ function LiveView() {
               <span className="supporters-empty">{en.emptySupporters}</span>
             )}
           </div>
-          <footer className="live-footer">
-            <span>✧ {en.disclosure}</span>
-            <span>{en.mock}</span>
-          </footer>
         </div>
+        <footer className="live-footer">
+          <span>✧ {en.disclosure}</span>
+          <span>
+            {state?.source?.mode === "tikfinity"
+              ? `TIKFINITY · ${state.source.connection}`
+              : en.mock}
+          </span>
+        </footer>
         <span className="audio-hint">
           {!audio && !state?.settings.muted ? en.soundPrompt : ""}
         </span>
@@ -241,12 +254,19 @@ export function ControlView() {
       <div className="connection-bar">
         <span className={`status-dot ${connected ? "" : "disconnected"}`} />
         <span data-testid="connection">
-          {connected ? en.online : en.connecting}
+          {connected
+            ? `SERVER CONNECTED · ${state?.source?.mode ?? "mock"}`
+            : en.connecting}
         </span>
-        <span>{en.simulation}</span>
+        <span>
+          {state?.source?.mode === "tikfinity"
+            ? "Desktop socket adapter · LIVE verification pending"
+            : en.simulation}
+        </span>
       </div>
       <div className="control-grid">
         <div className="control-main">
+          <ProductionPanel />
           <section className="panel">
             <div className="section-number">{en.participationSection}</div>
             <h2>{en.join}</h2>
@@ -404,7 +424,9 @@ export function ControlView() {
             </button>
             <p className="small-note">{en.audioNote}</p>
             <div className="audio-mixer">
-              {(["music", "ambient", "sfx"] as AudioLayer[]).map((layer) => (
+              {(
+                ["master", "music", "ambient", "sfx", "voice"] as AudioLayer[]
+              ).map((layer) => (
                 <label key={layer}>
                   {en[layer]}
                   <input
@@ -413,18 +435,33 @@ export function ControlView() {
                     min="0"
                     max="1"
                     step="0.01"
-                    value={audioSettings.mix[layer]}
+                    value={
+                      (state?.production ?? defaultProduction()).mix[layer]
+                    }
                     onChange={(event) =>
-                      audioSettings.set(layer, Number(event.target.value))
+                      void run("production", {
+                        ...(state?.production ?? defaultProduction()),
+                        mix: {
+                          ...(state?.production ?? defaultProduction()).mix,
+                          [layer]: Number(event.target.value),
+                        },
+                      })
                     }
                   />
-                  <span>{Math.round(audioSettings.mix[layer] * 100)}%</span>
+                  <span>
+                    {Math.round(
+                      (state?.production ?? defaultProduction()).mix[layer] *
+                        100,
+                    )}
+                    %
+                  </span>
                 </label>
               ))}
             </div>
             <output
               data-testid="audio-status"
               data-audio={JSON.stringify({
+                ...audioSettings,
                 contextTime: audioSettings.contextTime,
                 chord: audioSettings.chord,
                 running: audioSettings.running,

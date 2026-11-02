@@ -366,7 +366,7 @@ export class ChapelEngine {
       if (protectedByGift || a.journey) continue;
       if (
         (a.waitingSlot != null || a.transient) &&
-        (a.leaveAt !== undefined || now - a.lastSeen >= LIMITS.ttl)
+        (a.leaveAt !== undefined || now >= a.lastSeen + LIMITS.ttl)
       ) {
         a.leaveAt ??= now;
         if (now - a.leaveAt >= 1200) {
@@ -375,7 +375,7 @@ export class ChapelEngine {
         }
       } else if (
         a.admission === "inside" &&
-        now - a.lastSeen >= LIMITS.ttl &&
+        now >= a.lastSeen + LIMITS.ttl &&
         !this.queue.length &&
         !this.moving()
       ) {

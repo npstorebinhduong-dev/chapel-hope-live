@@ -1,78 +1,66 @@
-# Chapel of Hope LIVE v1.4 — Hàng chờ AMEN, vào lễ đường bằng gift
+# Chapel of Hope LIVE v1.6 — Production LIVE Edition
 
-Thánh đường châu Âu **ảo, hư cấu**, sân khấu 2,5D 9:16. Quy tắc mới trong [Task #06](docs/CODEX_PROMPT_06_AMEN_WAIT_GIFT_ENTRY_GENDER_VI.md) thay thế logic AMEN của mọi tài liệu cũ.
+Thánh đường châu Âu **2,5D**, khung dọc 9:16, hàng chờ AMEN, sáu quà, lời chúc Anh–Việt–Ý và adapter TikFinity Desktop. Đây là không gian ảo, không phải giáo xứ/bí tích thật; quà tạo hoạt cảnh, không hứa kết quả tâm linh.
 
-- **AMEN → chỉ đứng chờ miễn phí.** Không được cấp ghế hoặc tự đi vào, kể cả ghế trống.
-- **`1` → avatar nam; `2` → avatar nữ.** Phải khớp đúng văn bản sau trim. Có thể chọn trước AMEN; chỉ lưu lựa chọn phiên, chưa tạo người. Không suy luận giới tính thật từ tên.
-- **Gift của chính userId → được gọi, đi từ hàng chờ vào khu quà, thực hiện FX rồi về ghế/chỗ đứng.** Gửi gift trước AMEN vẫn xử lý được. Các comment chứa "gift", "rose", "quà", "1" không phải gift.
-- Người đã ở trong gửi thêm quà vẫn dùng một avatar và ghế đó. Ghế đầy vẫn có đường đi/điểm đứng; chỉ người đã tặng mới được ưu tiên ghế trống về sau.
+**Trạng thái: READY FOR WINDOWS VALIDATION. Chưa LIVE VERIFIED.** Linux mock/replay và browser không thay cho kiểm tra launcher, giọng Windows, TikFinity và audio/video output trên máy phát.
 
-Quà chỉ mở một hành động hình ảnh, không mua hiệu lực cầu nguyện hay bảo đảm kết quả tâm linh. Chưa có kết nối TikTok hoặc thanh toán; các nút là mock events.
+## Chạy Windows
 
-## Chạy
+[Tải gói Windows production](https://github.com/npstorebinhduong-dev/chapel-hope-live/blob/feat/production-live-v1-6/downloads/Chapel-of-Hope-LIVE-v1.6-Windows.zip?raw=true).
 
-Node.js 24 LTS (tối thiểu 22.12):
+Giải nén toàn bộ, cài Node.js ≥22.12 (khuyến nghị 24 LTS), chạy **START_CHAPEL_LIVE.bat**. Script mở LIVE và Control sau khi health check đạt. Dừng bằng **STOP_CHAPEL_LIVE.bat**, chỉ dừng tiến trình do launcher tạo. ZIP có bundle production và asset, không chứa Node runtime/node_modules, không phải standalone EXE.
 
-```sh
+- LIVE: `http://127.0.0.1:3001/`
+- Control: `http://127.0.0.1:3001/control`
+- Không cần Vite để chạy production.
+- Nếu build thiếu, launcher cài đúng lockfile rồi build; khi đó cần Internet.
+
+[Hướng dẫn Windows + TikFinity + LIVE Studio/OBS](docs/LIVE_STUDIO_TIKFINITY_WINDOWS_VI.md) · [Checklist audio capture](docs/AUDIO_CAPTURE_CHECKLIST_VI.md) · [Mapping ID thật](docs/GIFT_MAPPING_LIVE.md).
+
+## Luật đã khóa
+
+- AMEN chỉ tạo/renew một avatar **đứng hàng chờ**, không tự vào ghế.
+- Comment chính xác `1` chọn nam, `2` chọn nữ; chọn trước AMEN chỉ lưu tùy chọn phiên.
+- Chỉ gift hợp lệ của đúng viewer mới cho đi vào → đến zone → FX → ghế hoặc chỗ đứng. Gift trước AMEN vẫn chạy. Không sinh bản sao donor.
+- Sáu key độc lập: `candle_1`, `prayer_5`, `rose_5`, `bell_10`, `altar_100`, `ceremony_500`. Hai quà 5 xu phải map hai gift ID khác nhau, không dựa giá xu.
+- 50 AMEN + 5 người tặng → **45 chờ, 5 trong lễ đường**, không tính NPC.
+
+## Control và âm thanh
+
+Ba tab LIVE Connection, Audio & Language, Gift Test & Mapping. Có source Mock/TikFinity, endpoint loopback, Connect/Disconnect, bảng mapping sáu ID, log metadata giới hạn, 36 lời chúc, voice picker/rate/test, năm bus và preflight.
+
+Nhấp vào **đúng trang LIVE được capture** để unlock âm thanh, bỏ Mute sound ở Control. BrowserSpeechProvider chỉ dùng giọng cùng locale có thật trên máy; thiếu giọng giữ banner và báo Missing. RecordedClipProvider hỗ trợ bản thu local do operator có quyền cung cấp. Music giảm khoảng 10 dB khi voice bắt đầu và phục hồi khi xong/lỗi/timeout. Chỉ một lời đọc, queue bounded. Ngôn ngữ event đang phát được giữ ổn định khi đổi lựa chọn.
+
+Nhạc organ/piano, ambient, chuông và choir là **synthesis nguyên tác**, không phải recording người thật. [36 câu lời chúc](docs/VOICE_LINES_EN_VI_IT.md) · [Provider và giấy phép](docs/AUDIO_VOICES_AND_LICENSES.md).
+
+## TikFinity
+
+Server Node kết nối `ws://127.0.0.1:21213/` khi operator chọn TikFinity và Connect. Desktop phải chạy cùng PC. Mock endpoints không nhận quà/chat khi source LIVE được chọn. Mapping có thể sửa khi kết nối mà không reset scene. Socket connected không đồng nghĩa LIVE verified.
+
+Gift ID chưa map chỉ hiện Unknown Gift. Xử lý final combo, dedupe transaction/group ID, cap repeat 20, retry socket có backoff/heartbeat. Phiên viewer chỉ ở RAM; cấu hình operator lưu riêng khi launcher cung cấp `CHAPEL_CONFIG`. Khởi động lại luôn ở Mock, không tự đăng nhập hay GO LIVE.
+
+## Phát triển và kiểm thử
+
+```bash
 npm ci
 npm run dev
-```
-
-LIVE: http://127.0.0.1:5173/ — điều khiển: http://127.0.0.1:5173/control.
-
-Production: `npm run build`, `npm start`, mở cổng **3001**. Vite dev dùng proxy tới server 3001. Không cần API key/database; sau khi cài dependencies có thể chạy offline.
-
-Ở `/control`, chọn hoặc nhập **Session pseudonym** của người cần thử. Các nút AMEN / 1 Male / 2 Female / sáu quà đều dùng đúng ID đang chọn. Danh sách người phía dưới cho phép chọn lại một người có sẵn. Waiting/Entering/Inside/Seated và số quà chờ/đã xử lý/duplicate được cập nhật thực từ engine; NPC không tính vào các số này.
-
-**Thử nghiệm chính:** gửi 50 AMEN, chọn 5 ID trong danh sách, mỗi ID gửi một quà, chờ hành trình hoàn tất. Kết quả: **45 Waiting, 5 Inside, 5 Seated**. Người đang chờ quà tới lượt thuộc Entering; Inside chỉ tăng khi người đó qua cổng hàng chờ. Không dùng riêng tổng số người để suy ra số đã vào.
-
-Nút **Fill seats · mock gift replay** yêu cầu xác nhận reset, phát lại lịch sử gift mô phỏng để tạo 48 người đã vào ghế; không cấp ghế cho AMEN không có gift.
-
-## Sáu quà
-
-| Khóa | Xu mô phỏng | Hành động sau khi tới nơi |
-|---|---:|---|
-| `candle_1` | 1 | Thắp nến ở khu trái; thêm nến tồn tại |
-| `prayer_5` | 5 | Quỳ cầu nguyện |
-| `rose_5` | 5 | Dâng hoa ở khu phải; thêm hoa tồn tại |
-| `bell_10` | 10 | Chuông và phản ứng nhẹ của cộng đoàn |
-| `altar_100` | 100 | Điểm cầu nguyện trước bàn thờ, ánh ấm/focus |
-| `ceremony_500` | 500 | Cảnh tập thể quỳ, linh mục giơ tay, ánh sáng trang nghiêm |
-
-Giữ thời lượng FX 2,2–7 giây; **thời gian đi tới và về chỗ là riêng**, không nằm trong thời gian FX. Một hành trình dùng lối đi tại một thời điểm để tránh va chạm. Burst quà có thể phải chờ vài phút; queue tối đa 128 chờ, có ưu tiên giới hạn/chống bỏ đói. Queue đầy trả 429, sự kiện chưa được chấp nhận và có thể retry cùng ID. Dedupe bảo vệ cả gift đang phát và trong queue.
-
-## Hàng chờ, hình ảnh và âm thanh
-
-Giới hạn 100 viewer phiên, 48 ghế viewer + 16 NPC. Chỉ vẽ chi tiết 12 người chờ thành hai hàng, tên rút gọn và `+N waiting`; phần còn lại vẫn có trong logic. Avatar không tặng không bao giờ bị auto-seat. Hàng chỉ lấp khoảng trống sau khi người đi đã rời cổng, có nội suy. Mặc định TTL 10 phút; gift chờ/phát bảo vệ người gửi. Khi chính phiên đã đủ 100 người mà có người mới tặng, có tối đa một avatar người gửi tạm ngoài giới hạn để diễn đúng gift rồi rời; không nhân đôi người đã tồn tại.
-
-Artwork, nhân vật và linh mục 2,5D được giữ từ bản trước. Chuyển pose/appearance dùng lớp alpha riêng rồi compositing một lần, tránh nhấp nháy do alpha chồng; nhịp bước gắn với quãng đường; phép chiếu liên tục từ tiền sảnh vào lối đi. Low/Balanced/High, cache sprite và lớp giáo dân 8 Hz giữ nguyên.
-
-Âm thanh Web Audio gốc: nhạc pad nhẹ chu kỳ hòa âm 48 giây, room tone, reverb, bước chân/đến/ngồi/đứng, nến/hoa/chuông/100/500. Có ba thanh **Background music / Room ambience / Sound effects**, kéo về 0 để tắt từng lớp. Master **Mute sound** đồng bộ server. Mỗi tab cần bấm **Enable audio** để trình duyệt mở âm thanh; chỉ mở âm thanh ở tab bạn muốn thu, tránh phát đôi. Chặn tối đa 24 voice ngắn, bước chân/âm nhẹ có throttle; oscillator/buffer được dọn khi đóng scene. Đây là tổng hợp âm, chưa phải bản ghi organ/chuông thật.
-
-## HTML mở trực tiếp
-
-`npm run build:preview` xuất `artifacts/html-preview/index.html` tự chứa toàn bộ JavaScript/CSS/artwork. Giải nén [ZIP bản hiện tại](downloads/README.md) rồi mở `index.html` bằng Chrome/Edge, không cần Node/server/Internet trên máy người xem. Mặc định **50 người đang chờ**, không ai tự vào ghế. Mỗi tab là phiên riêng; tải lại tạo lại phiên mẫu. Bản sạch mở tab khác không dùng chung điều khiển.
-
-## Kiểm thử và bàn giao
-
-```sh
 npm run typecheck
 npm test
 npm run build
 npm run test:browser
-npm run build:preview
-npm run test:preview
+npm run test:production
+npm run test:soak
+npm run build:windows
 ```
 
-`test:browser` và `test:visual` dùng cùng bộ smoke Task #06, gồm ảnh preview, kiểm tra thật HTTP/WS/UI và AudioContext; cổng **3116**, Chromium `/usr/bin/chromium` hoặc `CHROMIUM_PATH`. Test quà dài đưa đồng hồ server tới các mốc hành trình để kiểm thử tái lập; audio chạy thời gian thực hơn một chu kỳ 48 giây. Test HTML chạy sáu quà theo thời gian thực nên có thể mất vài phút. Browser cloud có thể chặn `file://`; script ghi rõ khi phải nạp tài liệu HTML local được intercept, không backend/asset mạng, thay cho thao tác double-click.
+Dev: Vite 5173 + server 3001; production chuẩn `npm run build` rồi `npm start`; bundle đầy đủ `npm run build:windows` rồi `node production/server.cjs`. `CHAPEL_CONFIG` tùy chọn đường dẫn JSON cấu hình operator. Giữ server bind loopback.
 
-- [Báo cáo thay đổi, kết quả và giới hạn](docs/CHANGELOG_QUEUE_LOGIC.md)
-- [Preview và kết quả trình duyệt](docs/screenshots/queue/README.md)
-- [Nguồn asset](docs/ASSET_LICENSES.md)
-- [Tài liệu v1.3](docs/DELIVERY_2_5D_VI.md), [v1.2 lưu trữ](docs/ARCHIVE_README_V1_2.md)
+`test:browser` kiểm tra gameplay 50+5/100+20/ghế đầy và audio. `test:production` kiểm tra 18 quà–locale, voice API contract có fixture giả được phân biệt với voices thật, hai vòng nhạc thực, UI mapping và preflight. `test:soak` mặc định 30 phút mock thời gian thực (đổi `SOAK_MINUTES` khi chẩn đoán; không gọi bài rút ngắn là soak 30 phút). Chromium mặc định `/usr/bin/chromium` trong cloud.
 
-Các script hình ảnh v1.1/v1.2/v1.3 là fixture lịch sử, không còn tiêu chí gameplay hiện hành. Không dùng ảnh cũ AMEN tự ngồi để đánh giá bản v1.4.
+`npm run build:preview` → HTML offline tự chứa tại `artifacts/html-preview/index.html`; `npm run test:preview`. HTML chỉ là preview Mock, mỗi tab một phiên, không nối TikFinity. `npm run package:windows` (máy đóng gói có Python 3) tạo ZIP có manifest SHA256, không node_modules.
 
-## Giới hạn
+## Giới hạn và bằng chứng
 
-Nhân vật vẫn là sprite bốn mẫu gốc, không phải rig 3D/motion capture. Đã cải thiện blend và đường đi nhưng chưa có đủ góc quay thân/người; đi ngang hoặc lùi vẫn có giới hạn hình ảnh, có thể còn foot sliding. Không tuyên bố animation đã đạt chất lượng người quay thật. Nghệ thuật ghế/kiến trúc trong phông cố định; occlusion theo hàng ghế không phải depth mesh hoàn chỉnh. Chưa kiểm chứng LIVE dài nhiều giờ hoặc hiệu năng GPU trên máy phát của bạn. Dữ liệu chỉ ở RAM; restart/reset xóa phiên và lựa chọn avatar.
+Giữ atlas kiến trúc/nhân vật từ v1.4; thêm vật dâng, ánh sáng, micro-animation, blend và timeline. Chưa có mocap/quay nhân vật nhiều hướng; không gọi sprite là 3D photoreal. 100 viewer thông thường, 12 waiting hiển thị, 48 viewer seats + 16 NPC; tối đa một donor tạm nếu đã đầy 100. Queue gift 128, một hành trình/lối tại một thời điểm; burst cần chờ đi/về, full queue được báo rejected. Không cam kết nhận vô hạn.
+
+[Changelog và kết quả thực](docs/CHANGELOG_V1_6.md) · [Ảnh 9:16 và JSON kiểm thử](docs/screenshots/live-v16/README.md). Windows/TikFinity phiên LIVE/capture output phải xác nhận riêng trước khi ghi LIVE VERIFIED.

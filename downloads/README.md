@@ -1,9 +1,8 @@
-# HTML offline v1.4 — Task #06
+# Tải bản v1.6
 
-[Tải ZIP v1.4](https://github.com/npstorebinhduong-dev/chapel-hope-live/blob/feat/gift-entry-queue/downloads/Chapel-of-Hope-HTML-Preview.zip?raw=true)
+- [Windows production ZIP](https://github.com/npstorebinhduong-dev/chapel-hope-live/blob/feat/production-live-v1-6/downloads/Chapel-of-Hope-LIVE-v1.6-Windows.zip?raw=true): giải nén toàn bộ, cài Node ≥22.12, mở `START_CHAPEL_LIVE.bat`. Dừng bằng `STOP_CHAPEL_LIVE.bat`. Có build, code, manifest và tài liệu; không chứa Node/node_modules, không phải EXE standalone.
+- [HTML preview ZIP](https://github.com/npstorebinhduong-dev/chapel-hope-live/blob/feat/production-live-v1-6/downloads/Chapel-of-Hope-HTML-Preview.zip?raw=true): giải nén rồi mở `index.html`. Chỉ Mock/offline, mỗi tab một phiên, không nối TikFinity.
 
-Giải nén và mở `index.html` bằng Chrome/Edge. Không cần Node, máy chủ hoặc Internet. Mặc định 50 người **ở hàng chờ**, không tự vào ghế. Chọn ID trong bảng, dùng AMEN / 1 Male / 2 Female / gift; chỉ đúng người tặng mới được vào.
+Status: **READY FOR WINDOWS VALIDATION**. Chưa kiểm chứng launcher/voice/capture/phiên LIVE trên Windows. [Hướng dẫn](../docs/LIVE_STUDIO_TIKFINITY_WINDOWS_VI.md) · [Báo cáo](../docs/CHANGELOG_V1_6.md) · [Ảnh 9:16](../docs/screenshots/live-v16/README.md).
 
-Một tab là một phiên độc lập. Khung LIVE sạch mở tab mới không chia sẻ điều khiển. Bật âm thanh bằng Enable audio và bỏ Mute sound; ba mức âm riêng có thể kéo về 0. Tải lại sẽ khởi tạo lại 50 người chờ.
-
-ZIP gồm HTML tự chứa, hướng dẫn, báo cáo, nguồn asset, preview và kết quả test. Trình duyệt cloud chặn `file://`, nên bài kiểm tra chạy HTML local được intercept không backend/tài nguyên ngoài; chi tiết ghi trong `test-results.json`. Bản server tiêu chuẩn vẫn chạy bằng `npm ci`, `npm run dev`.
+Nếu link hiện trang GitHub, nhấn Download raw file. Không mở HTML trực tiếp trong trình xem ZIP. Với repository private, cần đăng nhập tài khoản có quyền truy cập.

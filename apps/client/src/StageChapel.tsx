@@ -362,7 +362,18 @@ export function StageChapel() {
       ctx.save();
       // The composited DOM layer caches the static architecture. A common CSS
       // transform keeps the background and all animated objects registered.
-      world.current!.style.transform = `scale(${fx.zoom})`;
+      const cinematic =
+        selectedGift === "altar_100" || selectedGift === "ceremony_500";
+      const elapsed = active ? Math.max(0, now - active.startedAt) : 0;
+      world.current!.style.transformOrigin = `50% ${selectedGift === "ceremony_500" ? 44 : 55}%`;
+      world.current!.style.transform = `scale(${fx.zoom}) translateY(${cinematic ? -fx.strength * 0.35 : 0}%)`;
+      if (selectedGift === "prayer_5")
+        glow(0.5, 0.554, 0.065, "rgba(255,220,162,.3)", fx.strength);
+      if (selectedGift === "ceremony_500") {
+        glow(0.5, 0.35, 0.46, "rgba(248,216,160,.15)", fx.strength);
+        glow(0.13, 0.52, 0.13, "rgba(255,185,93,.3)", fx.strength * 0.6);
+        glow(0.86, 0.52, 0.13, "rgba(255,185,93,.3)", fx.strength * 0.6);
+      }
       if (selectedGift === "altar_100" || selectedGift === "ceremony_500") {
         glow(0.5, 0.53, 0.23, "rgba(255,221,150,.45)", fx.strength * 0.65);
         // Restrained shafts preserve the altar silhouette and collective scene.
@@ -379,7 +390,7 @@ export function StageChapel() {
           );
           gradient.addColorStop(
             0,
-            `rgba(255,226,170,${fx.strength * (selectedGift === "ceremony_500" ? 0.11 : 0.045)})`,
+            `rgba(${["255,211,145", "160,194,241", "237,160,139"][i % 3]},${fx.strength * (selectedGift === "ceremony_500" ? 0.12 : 0.075)})`,
           );
           gradient.addColorStop(1, "rgba(255,220,160,0)");
           ctx.fillStyle = gradient;
@@ -411,27 +422,22 @@ export function StageChapel() {
       ctx.beginPath();
       ctx.rect(0, 0, width, height * 0.516);
       ctx.clip();
-      sprite(
-        4,
-        oldPriestPose,
-        0.52,
-        0.568,
-        0.095,
-        1 - priestBlend,
-        time * 0.001,
-        false,
-        true,
-      );
-      sprite(
-        4,
-        priestPose,
-        0.52,
-        0.568,
-        0.095,
-        priestBlend,
-        time * 0.001,
-        false,
-        true,
+      // Composite priest pose weights once to avoid opacity dip during crossfade.
+      actorContext.clearRect(0, 0, 128, 256);
+      actorContext.globalCompositeOperation = "lighter";
+      for (const [pose, weight] of [
+        [oldPriestPose, 1 - priestBlend],
+        [priestPose, priestBlend],
+      ]) {
+        actorContext.globalAlpha = weight;
+        actorContext.drawImage(actorImage(4, pose, 192, 0), 0, 0, 128, 256);
+      }
+      ctx.drawImage(
+        actorLayer,
+        0.52 * width - (0.095 * height * 0.46) / 2,
+        (0.568 - 0.095) * height + Math.sin(time * 0.001) * 0.2,
+        0.095 * height * 0.46,
+        0.095 * height,
       );
       ctx.restore();
 
@@ -455,7 +461,12 @@ export function StageChapel() {
                     -6.8 + Math.floor(a.seat! / 8) * 1.7,
                   ] as Vec3,
                   state:
-                    selectedGift === "ceremony_500" ? "kneeling" : "seated",
+                    selectedGift === "ceremony_500" ||
+                    (selectedGift === "bell_10" &&
+                      a.seat! < 8 &&
+                      elapsed > (a.seat! % 4) * 120)
+                      ? "kneeling"
+                      : "seated",
                   visible: true,
                 }
               : attendeePose(a, now, event);
@@ -588,6 +599,68 @@ export function StageChapel() {
             ctx.restore();
           }
           drawActor(m, phase, walking, bow);
+          // A carried offering belongs to the donor, never a cloned presenter.
+          const offering = a.journey?.giftKey;
+          if (
+            a.role === "viewer" &&
+            a.journey &&
+            now < a.journey.actionUntil &&
+            (offering === "rose_5" || offering === "candle_1")
+          ) {
+            const reach = Math.max(
+              0,
+              Math.min(1, (now - a.journey.actionAt) / 700),
+            );
+            const handX = m.x + 0.008,
+              handY = m.y - m.height * 0.48;
+            const x =
+              (handX * (1 - reach) +
+                (offering === "rose_5" ? 0.79 : 0.19) * reach) *
+              width;
+            const y = (handY * (1 - reach) + 0.546 * reach) * height;
+            ctx.save();
+            ctx.globalAlpha =
+              m.opacity * (now < a.journey.actionAt ? 1 : 1 - reach * 0.7);
+            if (offering === "rose_5") {
+              ctx.strokeStyle = "#56714a";
+              ctx.lineWidth = Math.max(1, width * 0.0016);
+              ctx.beginPath();
+              ctx.moveTo(x, y + height * 0.012);
+              ctx.lineTo(x + Math.sin(time * 0.002) * width * 0.002, y);
+              ctx.stroke();
+              for (let petal = 0; petal < 6; petal++) {
+                ctx.fillStyle = petal % 2 ? "#fff8ea" : "#e6dac5";
+                ctx.beginPath();
+                ctx.ellipse(
+                  x + Math.cos(petal) * width * 0.003,
+                  y + Math.sin(petal) * height * 0.0015,
+                  width * 0.004,
+                  height * 0.002,
+                  petal,
+                  0,
+                  Math.PI * 2,
+                );
+                ctx.fill();
+              }
+            } else {
+              ctx.fillStyle = "#f1dfb5";
+              ctx.fillRect(x, y, width * 0.005, height * 0.01);
+              glow(x / width, y / height, 0.014, "rgba(255,174,58,.55)", 0.7);
+              ctx.fillStyle = "#fff5c8";
+              ctx.beginPath();
+              ctx.ellipse(
+                x + width * 0.0025,
+                y,
+                width * 0.002,
+                height * 0.0035,
+                0,
+                0,
+                Math.PI * 2,
+              );
+              ctx.fill();
+            }
+            ctx.restore();
+          }
           if (
             a.role === "viewer" &&
             a.waitingSlot != null &&
@@ -689,7 +762,7 @@ export function StageChapel() {
         ctx.ellipse(x + 2, y + 5, 3, 1, -0.7, 0, Math.PI * 2);
         ctx.fill();
         for (let p = 0; p < 7; p++) {
-          const angle = p * 2.4;
+          const angle = p * 2.4 + Math.sin(time * 0.0015 + i) * 0.08;
           ctx.fillStyle = p % 2 ? "#fff7e8" : "#dfd4bd";
           ctx.beginPath();
           ctx.ellipse(
@@ -704,8 +777,27 @@ export function StageChapel() {
           ctx.fill();
         }
       }
-      if (selectedGift === "rose_5")
+      if (selectedGift === "rose_5") {
         glow(0.79, 0.55, 0.055, "rgba(255,239,192,.35)", fx.strength);
+        ctx.save();
+        ctx.globalAlpha = fx.strength * 0.65;
+        ctx.fillStyle = "#fff1dc";
+        for (let i = 0; i < 6; i++) {
+          const t = (elapsed / 2600 + i / 6) % 1;
+          ctx.beginPath();
+          ctx.ellipse(
+            (0.77 + Math.sin(t * 4 + i) * 0.025) * width,
+            (0.535 + t * 0.035) * height,
+            width * 0.0025,
+            height * 0.0015,
+            t * 3,
+            0,
+            Math.PI * 2,
+          );
+          ctx.fill();
+        }
+        ctx.restore();
+      }
       if (selectedGift === "bell_10") {
         // Small restrained concentric glints near the sanctuary bell, no screen flash.
         ctx.save();
@@ -748,6 +840,15 @@ export function StageChapel() {
       ctx.restore();
       ctx.restore();
       // Machine-readable diagnostics are on canvas only, never painted on stream.
+      element.dataset.fxPhase = !active
+        ? "idle"
+        : elapsed < 1000
+          ? "arrival"
+          : elapsed < 3000
+            ? "highlight"
+            : now > active.endsAt - 1200
+              ? "release"
+              : "wish";
       element.dataset.frames = String(++totalFrames);
       element.dataset.ready = "true";
       element.dataset.actors = String(cachedCount);

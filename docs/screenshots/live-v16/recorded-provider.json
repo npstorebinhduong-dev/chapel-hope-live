@@ -1,0 +1,19 @@
+{
+  "result": "passed",
+  "locales": [
+    "en",
+    "vi",
+    "it"
+  ],
+  "nativeHTMLAudioPlayback": true,
+  "duckAndMasterMute": true,
+  "voiceZeroStopsClipAndBannerExpires": true,
+  "busZeroGains": {
+    "music": 0.0007969154394231737,
+    "ambient": 0.00014118185208644718,
+    "sfx": 0,
+    "master": 0
+  },
+  "fixture": "Generated 3-second sine WAV routed locally for provider integration only; NOT a spoken/translated voice clip or capture-output verification.",
+  "errors": []
+}

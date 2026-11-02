@@ -81,7 +81,7 @@ await writeFile(
 );
 await writeFile(
   path.join(out, "HUONG_DAN.txt"),
-  `CHAPEL OF HOPE — BẢN HTML XEM THỬ OFFLINE
+  `CHAPEL OF HOPE v1.6 — BẢN HTML XEM THỬ OFFLINE
 
 1. Giải nén toàn bộ ZIP.
 2. Mở index.html bằng Chrome hoặc Microsoft Edge (nhấp đúp hoặc Open with).
@@ -92,6 +92,10 @@ await writeFile(
    Hãy dùng bảng bên cạnh cảnh trong cùng trang khi cần kiểm tra sự kiện.
 6. Comment 1 chọn nhân vật nam, 2 chọn nữ. Chỉ gift của người đó mới cho vào ghế.
 7. Tải lại trang sẽ khởi tạo lại 50 khách đang chờ. Mỗi tab là một phiên độc lập.
+8. Audio & Language chọn EN/VI/IT, giọng cùng ngôn ngữ nếu máy có sẵn.
+   Thiếu giọng vẫn có banner; không giả giọng tiếng khác. Voice là tùy chọn.
+9. Nút 50 AMEN + 5 gifts nằm trong Gift Test & Mapping.
+   TikFinity và LIVE preflight cần bản Windows production, không dùng HTML này.
 
 KHÔNG cần Node.js, npm, máy chủ, Internet hoặc kết nối TikTok.
 Tất cả JavaScript, CSS và hình ảnh đã nhúng trong index.html.

@@ -1,7 +1,13 @@
 import { create } from "zustand";
-export type AudioLayer = "music" | "ambient" | "sfx";
+export type AudioLayer = "master" | "music" | "ambient" | "sfx" | "voice";
 export type AudioMix = Record<AudioLayer, number>;
-const initial: AudioMix = { music: 0.22, ambient: 0.14, sfx: 0.45 };
+const initial: AudioMix = {
+  master: 1,
+  music: 0.22,
+  ambient: 0.14,
+  sfx: 0.45,
+  voice: 0.85,
+};
 function restore(): AudioMix {
   try {
     const data = JSON.parse(localStorage.getItem("chapel-audio") ?? "{}");

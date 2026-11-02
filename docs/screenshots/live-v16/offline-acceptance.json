@@ -1,0 +1,7 @@
+{
+  "result": "passed",
+  "scenarioButton": "50 AMEN + 5 gifts",
+  "viewers": 50,
+  "waiting": 45,
+  "note": "Confirms offline scenario starts; full journey outcome tested separately by production acceptance."
+}
