@@ -48,3 +48,8 @@ Repository không có bộ GLB nam/nữ chất lượng cao, skinning và các c
 ## v1.6 Production LIVE
 
 Giữ nguyên các atlas/plate 2,5D đã khai báo. Các vật dâng, chuyển động cánh hoa, light shafts và glow bổ sung được vẽ bằng code Canvas trong dự án. Nhạc/SFX/choir là synthesis nguyên tác; không tải bản thu thương mại hoặc giọng giáo sĩ. Xem `docs/AUDIO_VOICES_AND_LICENSES.md` về Browser Speech và điều kiện của clip operator cung cấp.
+
+
+## v1.7 — bồ câu và ánh sáng idle
+
+`apps/client/src/scene/stageAtmosphere.ts` vẽ bồ câu vector, cánh và ánh sáng bằng công thức nguyên tác trong dự án. Không tải model, hình hoặc recording bên thứ ba. Giữ nguyên nguồn/giấy phép các atlas hiện có.

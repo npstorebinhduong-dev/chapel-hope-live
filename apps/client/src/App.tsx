@@ -68,14 +68,14 @@ function LiveView() {
       ? state.active
       : null;
   const ceremony = active?.event.giftKey === "ceremony_500";
-  const hiddenWaiting =
-    state?.attendees.filter(
-      (a) => a.admission === "waiting" && (a.waitingSlot ?? Infinity) >= 12,
-    ).length ?? 0;
+  const cinematic =
+    ceremony ||
+    active?.event.giftKey === "altar_100" ||
+    (production.bannerEnabled && (voice.banner?.priority ?? 0) >= 2);
   return (
     <main className="live-shell">
       <div
-        className={`live-frame ${ceremony ? "ceremony" : ""}`}
+        className={`live-frame ${ceremony ? "ceremony" : ""} ${cinematic ? "cinematic" : ""}`}
         data-testid="live-frame"
         lang={production.locale}
         onPointerDown={() => {
@@ -119,12 +119,6 @@ function LiveView() {
           )}
           <span className="presence-divider" /> {state?.settings.npcs ? 16 : 0}{" "}
           {en.background}
-        </div>
-        <div className="waiting-caption">
-          {en.waitingLine}
-          {hiddenWaiting > 0
-            ? ` · +${hiddenWaiting} ${en.waiting.toLowerCase()}`
-            : ""}
         </div>
         {!connected && (
           <div role="status" className="connection-note">

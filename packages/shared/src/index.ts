@@ -105,7 +105,7 @@ export const parseComment = (text: string): "amen" | AvatarGender | "other" => {
 };
 export const isAmen = (text: string) => /^amen[.!?]*$/i.test(text.trim());
 export const LIMITS = {
-  viewers: 100,
+  insideStanding: 8,
   seats: 64,
   npc: 16,
   queue: 128,
@@ -113,7 +113,6 @@ export const LIMITS = {
   ttl: 600_000,
   supporters: 256,
   preferences: 256,
-  visibleWaiting: 12,
 } as const;
 export type Vec3 = [number, number, number];
 export type AttendeeState =
@@ -138,6 +137,7 @@ export interface Journey {
   entryAt?: number;
   actionAt: number;
   actionUntil: number;
+  departAt?: number;
   endAt: number;
   giftKey?: GiftKey;
 }
@@ -155,6 +155,7 @@ export interface Attendee {
   gender?: AvatarGender;
   pendingGender?: AvatarGender;
   waitingSlot?: number | null;
+  waitingTarget?: Vec3;
   queueMotion?: { from: Vec3; to: Vec3; startAt: number; endAt: number };
   journey?: Journey;
   transient?: boolean;

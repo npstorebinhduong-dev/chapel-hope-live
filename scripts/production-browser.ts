@@ -13,7 +13,7 @@ const browser = await chromium.launch({
   executablePath: "/usr/bin/chromium",
   args: ["--no-sandbox"],
 });
-const dir = "artifacts/live-v16";
+const dir = "artifacts/live-v17";
 await mkdir(dir, { recursive: true });
 const base = "http://127.0.0.1:3117";
 const post = async (url: string, body: unknown) => {
@@ -319,7 +319,7 @@ try {
     ),
   );
   console.log(
-    "v1.6 browser checks passed: 18 banners, provider contract, two music loops, preflight and acceptance.",
+    "v1.7 browser checks passed: 18 banners, provider contract, two music loops, preflight and acceptance.",
   );
 } finally {
   await browser.close();

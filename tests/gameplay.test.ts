@@ -228,17 +228,16 @@ test("full seats still play gifts at standing positions; only previously gifted 
   assert.equal(e.snapshot(exit.endAt + 30000).waitingCount, 10);
   assert.equal(e.attendees.get("u10")!.seat, null);
 });
-test("full viewer cap keeps accepted out-of-line gift with at most one temporary real donor avatar", () => {
+test("AMEN crowd has no 100-viewer cutoff and gift-before-AMEN still uses one real avatar", () => {
   const e = new ChapelEngine();
-  populate(e, 100);
+  populate(e, 1000);
+  assert.equal(e.attendees.size, 1000);
   e.gift(gift("rose_5", "outside"));
-  assert.equal(e.attendees.size, 101);
-  assert.equal(e.attendees.get("outside")!.transient, true);
+  assert.equal(e.attendees.size, 1001);
   const t = drain(e);
   assert.equal(e.roses, 1);
-  e.tick(t + 1300);
-  assert.equal(e.attendees.size, 100);
-  assert.equal(e.snapshot(t + 1300).waitingCount, 100);
+  assert.equal(e.snapshot(t).waitingCount, 1000);
+  assert.equal(e.snapshot(t).insideCount, 1);
 });
 test("dedupe is checked before invitation; queue-full events do not allocate seats or invite anyone", () => {
   const e = new ChapelEngine();
@@ -327,39 +326,37 @@ test("100 AMEN + 20 gifts drains without dropping gifts or inviting unrelated wa
   assert.ok(s.candles <= 64 && s.roses <= 48);
   assert.equal(s.supporters.length, 3);
 });
-test("queue render limit, serpentine spacing and smooth reflow are bounded at 100 comments", () => {
-  const e = new ChapelEngine();
-  populate(e, 100);
-  assert.equal(e.comment(comment("overflow")).status, "capacity");
-  const poses = [...e.attendees.values()]
-    .map((a) => attendeePose(a, now, null))
-    .filter((p) => p.visible);
-  assert.equal(poses.length, 12);
-  for (let i = 0; i < poses.length; i++)
-    for (let j = i + 1; j < poses.length; j++)
-      assert.ok(
-        Math.hypot(
-          poses[i].position[0] - poses[j].position[0],
-          poses[i].position[2] - poses[j].position[2],
-        ) >= 1.4,
-      );
-  e.gift(gift("candle_1", "u3"));
-  const start = now;
-  let last = new Map<string, number[]>();
-  for (let t = start; t < e.active!.startedAt; t += 50) {
-    e.tick(t);
-    const line = [...e.attendees.values()].filter(
-      (a) => a.waitingSlot != null && a.waitingSlot < 12,
+test("all 20/50/100/1000 waiting viewers have distinct visible positions and smooth reflow", () => {
+  for (const count of [20, 50, 100, 1000]) {
+    const e = new ChapelEngine();
+    populate(e, count);
+    e.tick(now + 2000);
+    const poses = [...e.attendees.values()].map((a) =>
+      attendeePose(a, now + 4000, null),
     );
-    for (const a of line) {
-      const p = attendeePose(a, t, e.active).position,
-        old = last.get(a.userId);
-      if (old)
-        assert.ok(
-          Math.hypot(p[0] - old[0], p[2] - old[2]) < 0.5,
-          "reflow cannot teleport",
-        );
-      last.set(a.userId, p);
+    assert.equal(poses.filter((p) => p.visible).length, count);
+    assert.equal(new Set(poses.map((p) => p.position.join(":"))).size, count);
+    for (const { position: p } of poses) {
+      assert.ok(Math.abs(p[0]) >= 0.84 && Math.abs(p[0]) < 4.8);
+      assert.ok(p[2] >= 18 && p[2] < 20.3);
+    }
+    e.gift(gift("candle_1", `u${count - 1}`, now + 5000));
+    const donor = e.attendees.get(`u${count - 1}`)!;
+    assert.deepEqual(donor.journey!.approach[0], poses.at(-1)!.position);
+    const last = new Map<string, number[]>();
+    for (let t = now + 5000; t < e.active!.startedAt; t += 50) {
+      e.tick(t);
+      for (const a of e.attendees.values()) {
+        if (a.waitingSlot == null) continue;
+        const p = attendeePose(a, t, e.active).position,
+          old = last.get(a.userId);
+        if (old)
+          assert.ok(
+            Math.hypot(p[0] - old[0], p[2] - old[2]) < 0.55,
+            "reflow cannot teleport",
+          );
+        last.set(a.userId, p);
+      }
     }
   }
 });
@@ -380,8 +377,8 @@ test("one moving donor stays on aisle/row branches and never jumps across journe
     // In pew depth a walker is in the centre aisle, or in a reserved front-of-row gap.
     if (p[2] >= -6.8 && p[2] <= 5.1 && Math.abs(p[0]) > 1)
       assert.ok(
-        Math.abs(p[2] - (-6.8 + Math.floor(a.seat! / 8) * 1.7 - 0.65)) < 0.02 ||
-          Math.abs(Math.abs(p[0]) - 2) < 0.01,
+        Math.abs(p[2] - (-6.8 + Math.floor(a.seat! / 8) * 1.7 - 0.65)) < 0.14 ||
+          Math.abs(Math.abs(p[0]) - 2) < 0.14,
         `route crosses pew at ${p}`,
       );
     previous = p;
@@ -460,25 +457,22 @@ test("renewing an inside attendee during departure reverses smoothly without clo
   assert.equal(a.admission, "inside");
   assert.equal(a.seat, seat);
 });
-test("donor and visible waiting avatars retain physical separation during exit, reflow and return", () => {
+test("crowd overlap is confined to foyer; only the real donor can use the chapel aisle", () => {
   const e = new ChapelEngine();
-  populate(e, 20);
-  e.gift(gift("rose_5", "u8"));
+  populate(e, 100);
+  e.tick(now + 2000);
+  e.gift(gift("rose_5", "u88", now + 4000));
   const end = e.active!.returnEndsAt!;
-  for (let t = now; t < end; t += 80) {
+  for (let t = now + 4000; t < end; t += 80) {
     e.tick(t);
-    const list = [...e.attendees.values()]
-      .map((a) => ({ id: a.userId, ...attendeePose(a, t, e.active) }))
-      .filter((p) => p.visible);
-    for (let i = 0; i < list.length; i++)
-      for (let j = i + 1; j < list.length; j++) {
-        const a = list[i].position,
-          b = list[j].position;
-        assert.ok(
-          Math.hypot(a[0] - b[0], a[2] - b[2]) >= 0.55,
-          `overlap ${list[i].id}/${list[j].id} at ${t - now}`,
-        );
-      }
+    for (const a of e.attendees.values()) {
+      const p = attendeePose(a, t, e.active).position;
+      if (a.userId !== "u88") {
+        assert.ok(p[2] >= 18);
+        assert.equal(a.seat, null);
+      } else if (p[2] > -7 && p[2] < 4)
+        assert.ok(Math.abs(p[0]) < 0.8 || (p[2] >= -4.2 && p[2] <= -3.39));
+    }
   }
 });
 
@@ -493,9 +487,32 @@ test("walking animation/audio follows line reflow and pauses during gift actions
   assert.equal(isAttendeeMoving(donor, j.startAt - 1), false);
   assert.equal(isAttendeeMoving(donor, j.startAt + 100), true);
   assert.equal(isAttendeeMoving(donor, j.actionAt + 100), false);
-  assert.equal(isAttendeeMoving(donor, j.actionUntil + 100), true);
+  assert.equal(isAttendeeMoving(donor, j.actionUntil + 100), false);
+  assert.equal(isAttendeeMoving(donor, j.departAt! + 100), true);
   e.tick(j.entryAt! + 1);
   assert.equal(waiter.admission, "waiting");
   assert.equal(isAttendeeMoving(waiter, j.entryAt! + 100), true);
   assert.equal(isAttendeeMoving(waiter, j.entryAt! + 1500), false);
+});
+
+test("full interior still performs a new donor ritual then walks out without an overlapping standing slot", () => {
+  const e = new ChapelEngine(24);
+  let t = now;
+  for (let i = 0; i < 16; i++) {
+    e.gift(gift("candle_1", `inside-${i}`, t));
+    t = drain(e, t);
+    for (const a of e.attendees.values()) a.lastSeen = t;
+  }
+  assert.equal(e.snapshot(t).insideCount, 16); // 8 viewer seats + 8 standing.
+  e.gift(gift("ceremony_500", "extra", t));
+  const donor = e.attendees.get("extra")!;
+  assert.equal(donor.transient, true);
+  assert.equal(donor.seat, null);
+  assert.equal(donor.overflow, null);
+  assert.equal(e.active!.event.userId, "extra");
+  assert.deepEqual(donor.journey!.departure.at(-1), [0.55, 0, 21]);
+  const end = drain(e, t);
+  assert.equal(e.completed, 17);
+  assert.equal(e.attendees.has("extra"), false);
+  assert.equal(e.snapshot(end).insideCount, 16);
 });

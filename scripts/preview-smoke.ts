@@ -100,7 +100,7 @@ try {
   for (const [count, total] of [
     [20, 21],
     [50, 71],
-    [100, 100],
+    [100, 171],
   ]) {
     await page
       .getByRole("button", { name: `+ ${count} visitors`, exact: true })
@@ -172,7 +172,7 @@ try {
       "embedded artwork rendered",
       "50 prefilled viewers",
       "AMEN dedup",
-      "20/50/100 bursts",
+      "20/50/100 bursts accumulate to 171 viewers without a cap",
       "six gifts complete",
       "persistent candles and flowers",
       "camera returns",

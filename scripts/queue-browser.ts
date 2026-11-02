@@ -102,7 +102,7 @@ try {
   offset = 20000;
   await expect(canvas).toHaveAttribute("data-waiting", "20");
   await expect(canvas).toHaveAttribute("data-inside", "0");
-  await expect(canvas).toHaveAttribute("data-visible-waiting", "12");
+  await expect(canvas).toHaveAttribute("data-visible-waiting", "20");
   await capture("A-20-AMEN-waiting");
   await reset();
   await control

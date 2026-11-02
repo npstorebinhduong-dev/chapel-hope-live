@@ -139,7 +139,7 @@ export function ProductionPanel() {
         );
   return (
     <section className="panel production-panel">
-      <h2>Production LIVE · v1.6</h2>
+      <h2>Production LIVE · v1.7</h2>
       <p>READY FOR WINDOWS VALIDATION · Real LIVE verification pending</p>
       <div role="tablist" aria-label="Production controls">
         {["LIVE Connection", "Audio & Language", "Gift Test & Mapping"].map(

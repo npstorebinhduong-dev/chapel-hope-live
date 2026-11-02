@@ -1,0 +1,17 @@
+{
+  "result": "passed",
+  "version": "1.7.0",
+  "mode": "mock",
+  "extractedZip": true,
+  "nodeModulesBundled": false,
+  "routes": [
+    "/",
+    "/control",
+    "/health"
+  ],
+  "waiting": 200,
+  "inside": 0,
+  "exitCode": 0,
+  "htmlFinalSmoke": true,
+  "limitation": "Node Linux production bundle and browser checked; Windows BAT/PowerShell execution remains unverified."
+}

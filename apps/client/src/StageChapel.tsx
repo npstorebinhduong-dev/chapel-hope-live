@@ -4,7 +4,6 @@ import {
   isAttendeeMoving,
   type Attendee,
   type ActiveGift,
-  LIMITS,
   type Vec3,
 } from "@chapel/shared";
 import { renderClock, sendMetrics, useSession } from "./store";
@@ -19,6 +18,12 @@ import {
   SPRITE_HEIGHTS,
 } from "./scene/stageLayout";
 import { en } from "./strings";
+import {
+  cameraTarget,
+  overviewCamera,
+  smoothCamera,
+} from "./scene/stageCamera";
+import { drawAtmosphere } from "./scene/stageAtmosphere";
 
 type Actor = Attendee & { role: "npc" | "viewer" | "presenter" };
 type Motion = {
@@ -35,6 +40,9 @@ type Motion = {
   step: number;
   worldX: number;
   worldZ: number;
+  lean: number;
+  turn: number;
+  phase: number;
 };
 const npcs: Actor[] = Array.from({ length: 16 }, (_, i) => ({
   userId: `npc-${i}`,
@@ -75,6 +83,11 @@ export function StageChapel() {
     let ctx: CanvasRenderingContext2D = display;
     const crowdLayer = document.createElement("canvas");
     const crowdContext = crowdLayer.getContext("2d")!;
+    const foyerLayer = document.createElement("canvas");
+    const foyerContext = foyerLayer.getContext("2d")!;
+    let foyerStamp = -1000,
+      foyerCount = 0,
+      foyerKey = "";
     let crowdStamp = -1000,
       crowdKey = "",
       cachedCount = 0;
@@ -84,12 +97,12 @@ export function StageChapel() {
       meter = previousTime,
       frames = 0,
       totalFrames = 0;
+    let camera = overviewCamera();
+    const epoch = performance.now();
     let priestPose = 0,
       oldPriestPose = 0,
       priestBlend = 1;
-    let stage: HTMLImageElement,
-      people: HTMLImageElement,
-      walk: HTMLImageElement;
+    let people: HTMLImageElement, walk: HTMLImageElement;
 
     const cache = new Map<string, HTMLCanvasElement>();
     const glows = new Map<string, HTMLCanvasElement>();
@@ -157,6 +170,9 @@ export function StageChapel() {
         element.height = height = h;
         crowdLayer.width = w;
         crowdLayer.height = h;
+        foyerLayer.width = w;
+        foyerLayer.height = h;
+        foyerStamp = -1000;
         crowdStamp = -1000;
       }
       if (detailLevel !== level) {
@@ -194,64 +210,6 @@ export function StageChapel() {
       );
       ctx.restore();
     };
-    const sprite = (
-      column: number,
-      pose: number,
-      x: number,
-      feet: number,
-      h: number,
-      alpha: number,
-      phase: number,
-      walking: boolean,
-      priest = false,
-      variant = column,
-    ) => {
-      if (alpha < 0.005) return;
-      const sourceHeight = SPRITE_HEIGHTS[pose]!;
-      const poseScale = priest || pose === 3 ? 1 : sourceHeight / 357;
-      const dh = h * poseScale * height;
-      // Two texture LODs: retain every actor while bounding texture sampling.
-      const resolution =
-        detailLevel === "low"
-          ? 72
-          : detailLevel === "high"
-            ? 192
-            : dh < 65
-              ? 80
-              : 128;
-      const framePosition = ((phase / (Math.PI * 2)) % 1) * 8;
-      const frame = Math.floor(framePosition),
-        mix = framePosition - frame;
-      const tile = actorImage(
-        column,
-        pose,
-        resolution,
-        variant,
-        walking && pose === 3 ? frame : -1,
-      );
-      const dw = h * height * 0.46;
-      const dx = x * width - dw / 2;
-      const dy =
-        feet * height -
-        dh +
-        (walking
-          ? Math.sin(phase * 2) * h * height * 0.006
-          : Math.sin(phase) * 0.15);
-      ctx.save();
-      ctx.globalAlpha = alpha;
-      ctx.drawImage(tile, dx, dy, dw, dh);
-      if (walking && pose === 3) {
-        ctx.globalAlpha = alpha * mix;
-        ctx.drawImage(
-          actorImage(column, pose, resolution, variant, (frame + 1) % 8),
-          dx,
-          dy,
-          dw,
-          dh,
-        );
-      }
-      ctx.restore();
-    };
     const actorLayer = document.createElement("canvas");
     actorLayer.width = 128;
     actorLayer.height = 256;
@@ -262,6 +220,7 @@ export function StageChapel() {
       phase: number,
       walking: boolean,
       bow: number,
+      simple = false,
     ) => {
       const blend = ease(m.blend),
         appearance = ease(m.appearance);
@@ -271,8 +230,6 @@ export function StageChapel() {
         m.height * ((1 - blend) * scale(m.previous) + blend * scale(m.pose));
       const dh = h * height,
         dw = m.height * height * 0.46;
-      actorContext.clearRect(0, 0, 128, 256);
-      actorContext.globalCompositeOperation = "lighter";
       const resolution =
         detailLevel === "low"
           ? 72
@@ -281,50 +238,67 @@ export function StageChapel() {
             : dh < 65
               ? 80
               : 128;
-      for (const [variant, weight] of [
-        [m.oldVariant, 1 - appearance],
-        [m.variant, appearance],
-      ]) {
-        if (!weight) continue;
-        for (const [pose, poseWeight] of [
-          [m.previous, 1 - blend],
-          [m.pose, blend],
+      const idle = !walking && m.blend === 1 && m.appearance === 1;
+      let source: HTMLCanvasElement;
+      if (idle || simple) {
+        source = actorImage(m.variant % 4, m.pose, resolution, m.variant);
+      } else {
+        actorContext.clearRect(0, 0, 128, 256);
+        actorContext.globalCompositeOperation = "lighter";
+        for (const [variant, weight] of [
+          [m.oldVariant, 1 - appearance],
+          [m.variant, appearance],
         ]) {
-          if (!poseWeight) continue;
-          const frameFloat = ((phase / (Math.PI * 2)) % 1) * 8;
-          const frame = Math.floor(frameFloat),
-            part = frameFloat - frame;
-          const steps =
-            walking && pose === 3
-              ? [
-                  [frame, 1 - part],
-                  [(frame + 1) % 8, part],
-                ]
-              : [[-1, 1]];
-          for (const [step, stepWeight] of steps) {
-            actorContext.globalAlpha = weight * poseWeight * stepWeight;
-            actorContext.drawImage(
-              actorImage(variant % 4, pose, resolution, variant, step),
-              0,
-              0,
-              128,
-              256,
-            );
+          if (!weight) continue;
+          for (const [pose, poseWeight] of [
+            [m.previous, 1 - blend],
+            [m.pose, blend],
+          ]) {
+            if (!poseWeight) continue;
+            const frameFloat = ((phase / (Math.PI * 2)) % 1) * 8;
+            const frame = Math.floor(frameFloat),
+              part = frameFloat - frame;
+            const steps =
+              walking && pose === 3
+                ? [
+                    [frame, 1 - part],
+                    [(frame + 1) % 8, part],
+                  ]
+                : [[-1, 1]];
+            for (const [step, stepWeight] of steps) {
+              actorContext.globalAlpha = weight * poseWeight * stepWeight;
+              actorContext.drawImage(
+                actorImage(variant % 4, pose, resolution, variant, step),
+                0,
+                0,
+                128,
+                256,
+              );
+            }
           }
         }
+        source = actorLayer;
       }
       ctx.save();
       ctx.globalAlpha = m.opacity;
-      const sway = walking
-        ? Math.sin(phase * 2) * dh * 0.006
-        : Math.sin(phase) * 0.4;
-      ctx.drawImage(
-        actorLayer,
-        m.x * width - dw / 2,
-        (m.y + bow) * height - dh + sway,
-        dw,
-        dh,
+      ctx.translate(m.x * width, (m.y + bow) * height);
+      // Feet stay planted. Lean and perspective narrowing follow travel tangent;
+      // atlas remains a rear-view 2.5D asset, not full directional mocap.
+      const breathe = walking ? 0 : Math.sin(phase) * 0.0025;
+      ctx.transform(
+        1 - Math.abs(m.turn) * 0.12,
+        0,
+        m.lean * 0.035 + (walking ? 0 : Math.sin(phase * 0.7) * 0.009),
+        1 + breathe,
+        0,
+        0,
       );
+      const settle =
+        (m.pose === 1 || m.pose === 2) && m.blend < 1
+          ? Math.sin(blend * Math.PI) * dh * 0.025
+          : 0;
+      const sway = walking ? Math.sin(phase * 2) * dh * 0.004 : 0;
+      ctx.drawImage(source, -dw / 2, -dh + sway + settle, dw, dh);
       ctx.restore();
     };
     const draw = (time: number) => {
@@ -350,11 +324,7 @@ export function StageChapel() {
       const effectNow = state
         ? state.now + Math.max(0, time - session.receivedAt)
         : now;
-      const fx = stageEffect(
-        state?.active,
-        effectNow,
-        state?.settings.camera ?? true,
-      );
+      const fx = stageEffect(state?.active, effectNow);
       const active = fx.key ? state?.active : null;
       const selectedGift = fx.key;
       ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -362,11 +332,54 @@ export function StageChapel() {
       ctx.save();
       // The composited DOM layer caches the static architecture. A common CSS
       // transform keeps the background and all animated objects registered.
-      const cinematic =
-        selectedGift === "altar_100" || selectedGift === "ceremony_500";
       const elapsed = active ? Math.max(0, now - active.startedAt) : 0;
-      world.current!.style.transformOrigin = `50% ${selectedGift === "ceremony_500" ? 44 : 55}%`;
-      world.current!.style.transform = `scale(${fx.zoom}) translateY(${cinematic ? -fx.strength * 0.35 : 0}%)`;
+      const donor = state?.attendees.find(
+        (a) => a.userId === state.active?.event.userId,
+      );
+      const donorPose = donor
+        ? attendeePose(donor, now, state?.active ?? null)
+        : null;
+      const donorPoint = donorPose
+        ? projectStage(donorPose.position[0], donorPose.position[2])
+        : null;
+      camera = smoothCamera(
+        camera,
+        cameraTarget(
+          state?.active,
+          effectNow,
+          state?.settings.camera ?? true,
+          donorPoint?.x,
+        ),
+        dt,
+      );
+      world.current!.style.transformOrigin = "0 0";
+      world.current!.style.transform = `translate(${camera.x * 100}%, ${camera.y * 100}%) scale(${camera.zoom})`;
+      const birds = drawAtmosphere(
+        ctx,
+        width,
+        height,
+        (time - epoch) / 1000,
+        level === "low",
+      );
+      if (donorPoint && selectedGift) {
+        glow(
+          donorPoint.x,
+          donorPoint.y - donorPoint.height * 0.4,
+          selectedGift === "altar_100" || selectedGift === "ceremony_500"
+            ? 0.075
+            : 0.045,
+          "rgba(255,220,154,.38)",
+          fx.strength * 0.8,
+        );
+      }
+      if (selectedGift === "bell_10")
+        glow(
+          0.5,
+          0.6,
+          0.25,
+          "rgba(255,225,170,.2)",
+          fx.strength * Math.exp(-elapsed / 1800),
+        );
       if (selectedGift === "prayer_5")
         glow(0.5, 0.554, 0.065, "rgba(255,220,162,.3)", fx.strength);
       if (selectedGift === "ceremony_500") {
@@ -471,6 +484,7 @@ export function StageChapel() {
                 }
               : attendeePose(a, now, event);
           const p = projectStage(pose.position[0], pose.position[2]);
+          p.height *= 0.97 + (a.variant % 5) * 0.015;
           const walking = isAttendeeMoving(a, now);
           const target = walking
             ? 3
@@ -497,6 +511,15 @@ export function StageChapel() {
               step: a.variant * 1.31,
               worldX: pose.position[0],
               worldZ: pose.position[2],
+              lean: 0,
+              turn: 0,
+              phase:
+                ([...a.userId].reduce(
+                  (n, c) => (n * 31 + c.charCodeAt(0)) >>> 0,
+                  7,
+                ) %
+                  628) /
+                100,
             };
             motions.set(id, motion);
           }
@@ -520,10 +543,39 @@ export function StageChapel() {
             pose.position[0] - motion.worldX,
             pose.position[2] - motion.worldZ,
           );
-          if (walking) motion.step += Math.min(1, distance) * 3.4;
+          const dx = pose.position[0] - motion.worldX;
+          const dz = pose.position[2] - motion.worldZ;
+          const direction = walking && distance > 0.0001 ? dx / distance : 0;
+          motion.turn += (direction - motion.turn) * (1 - Math.exp(-dt * 6));
+          motion.lean +=
+            (direction * Math.min(1, distance / Math.max(0.001, dt) / 2.4) -
+              motion.lean) *
+            (1 - Math.exp(-dt * 7));
+          // Use rendered displacement, not raw snapshot jumps, to drive stride.
+          const projectedTravel = Math.hypot(
+            p.x - motion.x,
+            (p.y - motion.y) * 1.7778,
+          );
+          if (walking)
+            motion.step += Math.min(
+              0.55,
+              (projectedTravel / Math.max(0.035, p.height)) *
+                8 *
+                (1 - Math.exp(-dt * 12)),
+            );
           motion.worldX = pose.position[0];
           motion.worldZ = pose.position[2];
-          motion.blend = Math.min(1, motion.blend + dt / 0.45);
+          motion.blend = Math.min(
+            1,
+            motion.blend +
+              dt /
+                (target === 1 ||
+                target === 2 ||
+                motion.previous === 1 ||
+                motion.previous === 2
+                  ? 0.85
+                  : 0.5),
+          );
           const blend = 1 - Math.exp(-dt * 12);
           motion.x += (p.x - motion.x) * blend;
           motion.y += (p.y - motion.y) * blend;
@@ -532,15 +584,17 @@ export function StageChapel() {
         })
         .sort((a, b) => a.motion.y - b.motion.y);
       for (const id of motions.keys()) if (!used.has(id)) motions.delete(id);
+      const inside = projected.filter((p) => p.a.waitingSlot == null);
+      const waiting = projected.filter((p) => p.a.waitingSlot != null);
       const key =
-        projected
+        inside
           .map(
             ({ a, motion, pose }) =>
               `${a.role}:${a.userId}:${motion.pose}:${pose.visible}:${motion.variant}`,
           )
           .join("|") + level;
       const animateCrowd =
-        projected.some(
+        inside.some(
           (p) =>
             p.walking ||
             p.motion.blend < 1 ||
@@ -556,7 +610,7 @@ export function StageChapel() {
         ctx = crowdContext;
         ctx.clearRect(0, 0, width, height);
         let drawn = 0;
-        for (const { a, pose, motion: m, walking } of projected) {
+        for (const { a, pose, motion: m, walking } of inside) {
           if (!pose.visible || m.y - m.height > 1 || m.x < -0.08 || m.x > 1.08)
             continue;
           drawn++;
@@ -576,7 +630,7 @@ export function StageChapel() {
             ctx.rect(0, 0, width, PEW_RAILS[row]! * height);
             ctx.clip();
           }
-          const phase = walking ? m.step : time * 0.0015 + a.variant * 1.31;
+          const phase = walking ? m.step : time * 0.0015 + m.phase;
           const bow =
             selectedGift === "bell_10"
               ? Math.sin((fx.strength * Math.PI) / 2) * 0.002
@@ -598,7 +652,13 @@ export function StageChapel() {
             ctx.fill();
             ctx.restore();
           }
-          drawActor(m, phase, walking, bow);
+          const simple =
+            a.waitingSlot != null &&
+            projected.length > 250 &&
+            m.blend === 1 &&
+            m.appearance === 1 &&
+            !walking;
+          drawActor(m, phase, walking, bow, simple);
           // A carried offering belongs to the donor, never a cloned presenter.
           const offering = a.journey?.giftKey;
           if (
@@ -607,10 +667,7 @@ export function StageChapel() {
             now < a.journey.actionUntil &&
             (offering === "rose_5" || offering === "candle_1")
           ) {
-            const reach = Math.max(
-              0,
-              Math.min(1, (now - a.journey.actionAt) / 700),
-            );
+            const reach = ease(clamp((now - a.journey.actionAt) / 700, 0, 1));
             const handX = m.x + 0.008,
               handY = m.y - m.height * 0.48;
             const x =
@@ -661,39 +718,106 @@ export function StageChapel() {
             }
             ctx.restore();
           }
-          if (
-            a.role === "viewer" &&
-            a.waitingSlot != null &&
-            a.waitingSlot < LIMITS.visibleWaiting &&
-            state?.settings.npcs !== undefined
-          ) {
-            ctx.save();
-            ctx.globalAlpha = m.opacity;
-            ctx.font = `${Math.max(8, width * 0.017)}px Arial`;
-            ctx.textAlign = "center";
-            ctx.fillStyle = "#f5e7ca";
-            ctx.shadowColor = "#111";
-            ctx.shadowBlur = 3;
-            const label =
-              a.username.length > 10
-                ? a.username.slice(0, 9) + "…"
-                : a.username;
-            ctx.fillText(
-              label,
-              m.x * width,
-              (m.y - m.height - 0.008) * height,
-              width * 0.12,
-            );
-            ctx.restore();
-          }
           ctx.restore();
         }
         cachedCount = drawn;
         crowdStamp = time;
         crowdKey = key;
       }
+      // The waiting crowd is a separate depth/animation LOD layer. A moving
+      // donor must not force hundreds of distant impostors to redraw at 60 Hz.
+      const nextFoyerKey =
+        waiting.map((p) => `${p.a.userId}:${p.a.variant}`).join("|") + level;
+      const dense = waiting.length > 250;
+      const foyerMoving =
+        !dense &&
+        waiting.some(
+          (p) => p.walking || p.motion.blend < 1 || p.motion.appearance < 1,
+        );
+      if (
+        nextFoyerKey !== foyerKey ||
+        foyerMoving ||
+        time - foyerStamp >= (dense ? 200 : 125)
+      ) {
+        ctx = foyerContext;
+        ctx.clearRect(0, 0, width, height);
+        for (const { a, motion: m, walking } of waiting) {
+          const simple =
+            dense && (a.waitingSlot ?? 0) >= 24 && m.appearance === 1;
+          drawActor(
+            m,
+            walking ? m.step : time * 0.0015 + m.phase,
+            walking,
+            0,
+            simple,
+          );
+        }
+        foyerCount = waiting.length;
+        foyerKey = nextFoyerKey;
+        foyerStamp = time;
+      }
       ctx = display;
       ctx.drawImage(crowdLayer, 0, 0);
+      ctx.drawImage(foyerLayer, 0, 0);
+      const boxes: { x: number; y: number; w: number; h: number }[] = [];
+      const labels = projected
+        .filter(
+          (p) =>
+            p.pose.visible &&
+            p.a.role === "viewer" &&
+            (p.a.waitingSlot != null ||
+              p.a.userId === state?.active?.event.userId),
+        )
+        .sort((a, b) => {
+          const priority = (p: typeof a) =>
+            p.a.userId === state?.active?.event.userId
+              ? 0
+              : p.a.admission === "invited"
+                ? 1
+                : now - p.a.joinedAt < 4000
+                  ? 2
+                  : 3;
+          return (
+            priority(a) - priority(b) ||
+            (a.a.waitingSlot ?? 0) - (b.a.waitingSlot ?? 0)
+          );
+        });
+      ctx.save();
+      ctx.font = `${Math.max(9, width * 0.018)}px Arial`;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      for (const { a, motion: m } of labels) {
+        if (boxes.length >= 7) break;
+        const text =
+          a.username.length > 14 ? a.username.slice(0, 13) + "…" : a.username;
+        const w = Math.min(width * 0.17, ctx.measureText(text).width + 10),
+          h = width * 0.03;
+        const x = clamp(
+          m.x * width,
+          (-camera.x / camera.zoom) * width + w / 2 + 2,
+          ((1 - camera.x) / camera.zoom) * width - w / 2 - 2,
+        );
+        const y =
+          (a.waitingSlot == null ? m.y + 0.012 : m.y - m.height - 0.009) *
+          height;
+        if (
+          boxes.some(
+            (b) =>
+              Math.abs(b.x - x) < (b.w + w) / 2 + 4 &&
+              Math.abs(b.y - y) < (b.h + h) / 2 + 3,
+          )
+        )
+          continue;
+        boxes.push({ x, y, w, h });
+        ctx.globalAlpha = m.opacity * 0.8;
+        ctx.fillStyle = "#231b12";
+        ctx.fillRect(x - w / 2, y - h / 2, w, h);
+        ctx.globalAlpha = m.opacity;
+        ctx.fillStyle = a.admission === "invited" ? "#ffe1a0" : "#f5e7ca";
+        ctx.fillText(text, x, y, w - 8);
+      }
+      ctx.restore();
+
       // Votive offering slots are physically attached to the left candle rack.
       const candles = Math.min(82, 18 + (state?.candles ?? 0));
       for (let i = 0; i < candles; i++) {
@@ -717,6 +841,18 @@ export function StageChapel() {
             "rgba(255,168,62,.55)",
             flicker * 0.5,
           );
+        ctx.fillStyle = "#ffc05b";
+        ctx.beginPath();
+        ctx.ellipse(
+          (x + 0.0017) * width,
+          (y - 0.0014) * height,
+          Math.max(0.8, width * 0.0022),
+          height * 0.0038 * flicker,
+          0.1 * Math.sin(time * 0.002 + i),
+          0,
+          Math.PI * 2,
+        );
+        ctx.fill();
         ctx.fillStyle = "#fff5cc";
         ctx.beginPath();
         ctx.ellipse(
@@ -851,13 +987,18 @@ export function StageChapel() {
               : "wish";
       element.dataset.frames = String(++totalFrames);
       element.dataset.ready = "true";
-      element.dataset.actors = String(cachedCount);
+      element.dataset.actors = String(cachedCount + foyerCount);
       element.dataset.walking = String(
         projected.filter((p) => p.walking && p.pose.visible).length,
       );
       element.dataset.priest = String(priestPose);
       element.dataset.gift = selectedGift ?? "";
-      element.dataset.zoom = fx.zoom.toFixed(4);
+      element.dataset.zoom = camera.zoom.toFixed(4);
+      element.dataset.cameraFocus = camera.focus;
+      element.dataset.cameraX = camera.x.toFixed(5);
+      element.dataset.cameraY = camera.y.toFixed(5);
+      element.dataset.birds = String(birds);
+      element.dataset.atmosphere = ((time - epoch) / 1000).toFixed(2);
       element.dataset.candles = String(state?.candles ?? 0);
       element.dataset.roses = String(state?.roses ?? 0);
       element.dataset.quality = level;
@@ -879,7 +1020,6 @@ export function StageChapel() {
     ])
       .then(([s, p, w]) => {
         if (disposed) return;
-        stage = s;
         people = p;
         walk = w;
         resize();

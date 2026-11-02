@@ -1,11 +1,13 @@
 import test from "node:test";
+import {
+  cameraTarget,
+  overviewCamera,
+  smoothCamera,
+} from "../apps/client/src/scene/stageCamera.ts";
 import assert from "node:assert/strict";
 import { ChapelEngine } from "../packages/shared/src/engine.ts";
 import { GIFTS, giftKeys, seatPosition } from "../packages/shared/src/index.ts";
-import {
-  projectStage,
-  stageEffect,
-} from "../apps/client/src/scene/stageLayout.ts";
+import { projectStage } from "../apps/client/src/scene/stageLayout.ts";
 
 test("stage projection preserves unique seats, depth ordering and visible sanctuary", () => {
   const locations = new Set<string>();
@@ -24,35 +26,52 @@ test("stage projection preserves unique seats, depth ordering and visible sanctu
   assert.ok(projectStage(0, -9).y < projectStage(0, -6.8).y);
 });
 
-test("all gift camera effects are bounded and reset even after delayed snapshots or disconnects", () => {
-  const engine = new ChapelEngine();
+test("every gift focuses its donor, preserves the foyer and releases after disconnect", () => {
   for (const giftKey of giftKeys) {
-    engine.control("reset");
-    engine.gift(
-      {
-        type: "gift",
-        giftKey,
-        eventId: giftKey,
-        userId: "viewer",
-        username: "Guest",
-        coinValue: GIFTS[giftKey].coins,
-        repeatCount: 1,
-        timestamp: 1000,
-      },
-      1000,
-    );
-    const active = engine.active!;
-    for (let time = active.startedAt; time <= active.endsAt; time += 100) {
-      const effect = stageEffect(active, time, true);
-      assert.ok(effect.zoom >= 1 && effect.zoom <= 1.018);
-      assert.ok(effect.strength >= 0 && effect.strength <= 1);
-      assert.equal(stageEffect(active, time, false).zoom, 1);
-    }
-    assert.deepEqual(stageEffect(active, active.endsAt + 60000, true), {
-      key: null,
-      strength: 0,
-      zoom: 1,
+    const engine = new ChapelEngine();
+    engine.gift({
+      type: "gift",
+      giftKey,
+      eventId: giftKey,
+      userId: "donor",
+      username: "Guest",
+      coinValue: GIFTS[giftKey].coins,
+      repeatCount: 1,
+      timestamp: 1000,
     });
+    const active = engine.active!;
+    let camera = overviewCamera(),
+      peak = 1;
+    for (
+      let now = active.startedAt - 3000;
+      now < active.endsAt + 5000;
+      now += 16
+    ) {
+      const target = cameraTarget(
+        active,
+        now,
+        true,
+        giftKey === "candle_1" ? 0.225 : 0.5,
+      );
+      camera = smoothCamera(camera, target, 0.016);
+      peak = Math.max(peak, camera.zoom);
+      assert.ok(camera.zoom >= 1 && camera.zoom <= 1.28);
+      assert.ok(
+        Math.abs(camera.zoom + camera.y - 1) < 0.0001,
+        "bottom of crowd stays in frame",
+      );
+      assert.ok(camera.x >= 1 - camera.zoom - 0.0001 && camera.x <= 0.0001);
+      assert.deepEqual(cameraTarget(active, now, false), overviewCamera());
+    }
+    assert.ok(peak > 1.04, `${giftKey} must visibly focus`);
+    assert.ok(Math.abs(camera.zoom - 1) < 0.0001);
+    assert.equal(camera.focus, "");
+    const middle = cameraTarget(active, active.startedAt + 1000, true);
+    assert.equal(middle.focus, "donor");
+    assert.deepEqual(
+      cameraTarget(active, active.endsAt + 60000, true),
+      overviewCamera(),
+    );
   }
 });
 

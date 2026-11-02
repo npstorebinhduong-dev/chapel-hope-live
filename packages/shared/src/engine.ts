@@ -134,8 +134,6 @@ export class ChapelEngine {
       }
       return existing;
     }
-    if (this.attendees.size >= LIMITS.viewers + (temporary ? 1 : 0))
-      return null;
     const slots = [...this.attendees.values()]
       .filter((a) => a.waitingSlot != null)
       .map((a) => a.waitingSlot!);
@@ -158,11 +156,13 @@ export class ChapelEngine {
       transient: temporary,
     };
     this.setGender(a, gender);
+    a.waitingTarget = waitingPosition(a.waitingSlot!, slots.length + 1);
+    this.compactAt = Math.min(this.compactAt, now + 100);
     this.attendees.set(userId, a);
     return a;
   }
   private allocate(a: Attendee) {
-    if (a.seat !== null || a.overflow !== null) return;
+    if (a.seat !== null || a.overflow !== null || a.transient) return;
     const occupied = new Set([...this.attendees.values()].map((p) => p.seat));
     if (!a.transient)
       for (let seat = LIMITS.npc; seat < this.capacity; seat++)
@@ -175,21 +175,33 @@ export class ChapelEngine {
     );
     let slot = 0;
     while (standing.has(slot)) slot++;
-    a.overflow = slot;
+    // Keep the interior physically bounded. Extra gifters still perform their
+    // ritual, then walk out; the AMEN crowd itself has no fixed attendee cap.
+    if (slot >= LIMITS.insideStanding) {
+      a.transient = true;
+      a.overflow = null;
+    } else a.overflow = slot;
   }
   private compact(now: number) {
     const line = [...this.attendees.values()]
       .filter((a) => a.waitingSlot != null)
       .sort((a, b) => a.waitingSlot! - b.waitingSlot!);
     line.forEach((a, slot) => {
-      if (a.waitingSlot === slot) return;
+      const target = waitingPosition(slot, line.length);
+      const from = waitingPose(a, now);
+      if (
+        a.waitingSlot === slot &&
+        a.waitingTarget?.every((v, i) => v === target[i])
+      )
+        return;
       a.queueMotion = {
-        from: waitingPose(a, now),
-        to: waitingPosition(slot),
+        from,
+        to: target,
         startAt: now,
         endAt: now + 1200,
       };
       a.waitingSlot = slot;
+      a.waitingTarget = target;
     });
     this.compactAt = Infinity;
   }
@@ -265,13 +277,7 @@ export class ChapelEngine {
     } else this.priorityStreak = 0;
     const [event] = this.queue.splice(index, 1);
     let a = this.attendees.get(event.userId);
-    if (!a)
-      a = this.join(
-        event.userId,
-        event.username,
-        now,
-        this.attendees.size >= LIMITS.viewers,
-      )!;
+    if (!a) a = this.join(event.userId, event.username, now, false)!;
     if (!a) {
       this.queue.unshift(event);
       return;
@@ -279,15 +285,18 @@ export class ChapelEngine {
     if (a.admission === "waiting") a.admission = "invited";
     this.allocate(a);
     const approach = giftApproach(a, event.giftKey, now),
-      departure = giftReturn(a, approach.at(-1)!);
-    const startAt = now + 500,
+      departure = a.transient
+        ? [approach.at(-1)!, [0.55, 0, -9] as Vec3, [0.55, 0, 21] as Vec3]
+        : giftReturn(a, approach.at(-1)!);
+    const startAt = now + 850,
       actionAt = startAt + walkDuration(approach);
     const duration = Math.max(
       1200,
       GIFTS[event.giftKey].duration * (this.queue.length > 12 ? 0.65 : 1),
     );
     const actionUntil = actionAt + duration,
-      endAt = actionUntil + walkDuration(departure);
+      departAt = actionUntil + 900,
+      endAt = departAt + walkDuration(departure);
     const entryAt =
       a.waitingSlot != null
         ? startAt + walkDuration(queueExitPath(approach[0]))
@@ -305,6 +314,7 @@ export class ChapelEngine {
       entryAt,
       actionAt,
       actionUntil,
+      departAt,
       endAt,
       giftKey: event.giftKey,
     };
@@ -345,12 +355,16 @@ export class ChapelEngine {
           delete a.journey;
           a.lastSeen = now;
           if (a.pendingGender) this.setGender(a, a.pendingGender);
-          if (a.transient) a.leaveAt = now;
+          if (a.transient) {
+            this.attendees.delete(a.userId);
+          }
         }
         this.completed++;
         this.active = null;
       }
     }
+    const protectedIds = new Set(this.queue.map((e) => e.userId));
+    if (this.active) protectedIds.add(this.active.event.userId);
     for (const [id, a] of this.attendees) {
       if (a.journey?.kind !== "gift" && a.journey && now >= a.journey.endAt) {
         if (a.journey.kind === "leave") {
@@ -360,9 +374,7 @@ export class ChapelEngine {
         delete a.journey;
         if (a.pendingGender) this.setGender(a, a.pendingGender);
       }
-      const protectedByGift =
-        this.active?.event.userId === id ||
-        this.queue.some((e) => e.userId === id);
+      const protectedByGift = protectedIds.has(id);
       if (protectedByGift || a.journey) continue;
       if (
         (a.waitingSlot != null || a.transient) &&

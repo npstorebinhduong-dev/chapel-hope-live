@@ -1,0 +1,48 @@
+
+> chapel-hope-live@1.7.0 test
+> tsx --test tests/*.test.ts
+
+✔ parser separates AMEN, exact 1/2 and unrelated text; text never routes as gifts (2.179299ms)
+✔ AMEN duplicates and three repeats keep one waiting avatar, no seat, renewing TTL (1.053351ms)
+✔ gender before AMEN stores preference only; rapid gender changes preserve identity/position (0.677697ms)
+✔ session preferences expire and reset; nickname never determines appearance choice (0.245158ms)
+✔ 50 AMEN + exactly 5 gifters yields 45 waiting and 5 inside, excluding NPCs (8.513554ms)
+✔ FX/offerings/camera start only after the same avatar reaches its gift zone (1.895835ms)
+✔ returning gifts preserve one avatar and seat; gender changes defer safely during a journey (0.403565ms)
+✔ full seats still play gifts at standing positions; only previously gifted people can inherit a vacancy (2.051529ms)
+✔ AMEN crowd has no 100-viewer cutoff and gift-before-AMEN still uses one real avatar (62.325252ms)
+✔ dedupe is checked before invitation; queue-full events do not allocate seats or invite anyone (3.079661ms)
+✔ event runtime guard rejects text disguised as gift and normalizes coin values (0.445218ms)
+✔ six keys and repeat limits remain distinct, including two five-coin gifts (0.617707ms)
+✔ FIFO ties and bounded priority fairness survive travel and return phases (0.6267ms)
+✔ 100 AMEN + 20 gifts drains without dropping gifts or inviting unrelated waiting people (4.325129ms)
+✔ all 20/50/100/1000 waiting viewers have distinct visible positions and smooth reflow (108.604149ms)
+✔ one moving donor stays on aisle/row branches and never jumps across journey boundaries (2.919771ms)
+✔ waiting TTL fades out without ever getting a seat; repeated AMEN cancels waiting departure (0.230906ms)
+✔ reset clears waiting, preferences, seats, counters, queue and offerings (0.210276ms)
+✔ adapter uses explicit platform IDs and deduplicates final repeat streaks (2.3863ms)
+✔ renewing an inside attendee during departure reverses smoothly without cloning or losing the seat (0.24703ms)
+✔ crowd overlap is confined to foyer; only the real donor can use the chapel aisle (9.738301ms)
+✔ walking animation/audio follows line reflow and pauses during gift actions (0.355373ms)
+✔ full interior still performs a new donor ritual then walks out without an overlapping standing slot (0.740661ms)
+✔ TikFinity replay: chat/gender, six IDs, two five-coin gifts, streak final and dedupe, unknown and malformed (8.989738ms)
+✔ TikFinity loopback restriction rejects remote URLs and credentials (0.816334ms)
+✔ TikFinity actual local WebSocket reconnect, clean disconnect and no duplicate listener (176.73979ms)
+✔ 30 gifts complete without duplicates or dropped events; repeat cap and identity are explicit (4.291419ms)
+✔ 36 exact-language wishes, independent gift rotation and matching voice language only (1.491217ms)
+✔ voice queue serializes, coalesces overload, restores ducking and never substitutes missing voices (2.353481ms)
+✔ production server source isolation, persisted operator settings, mapping validation and scoped shutdown (168.381484ms)
+✔ mapping update retains a connected socket and observed gift metadata (23.117816ms)
+✔ HTTP validation, normalized gifts, bounded bursts and WebSocket multi-tab snapshots (285.891561ms)
+✔ stage projection preserves unique seats, depth ordering and visible sanctuary (2.082785ms)
+✔ every gift focuses its donor, preserves the foyer and releases after disconnect (21.08139ms)
+✔ foyer-to-aisle projection has no position or scale discontinuity (0.341002ms)
+✔ anatomical fallback lofts have outward normals and finite vertex data (1.211297ms)
+ℹ tests 36
+ℹ suites 0
+ℹ pass 36
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 888.246274

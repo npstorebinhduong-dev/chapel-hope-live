@@ -1,0 +1,9 @@
+{
+  "result": "passed",
+  "tool": "PowerShell 7.4.6 Linux parser",
+  "files": [
+    "windows/Start-Chapel.ps1",
+    "windows/Stop-Chapel.ps1"
+  ],
+  "limitation": "Syntax parsed only; scripts not executed on Windows."
+}

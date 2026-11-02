@@ -1180,3 +1180,12 @@ dd {
   opacity: 0;
   transition: opacity 0.5s ease;
 }
+
+/* During large-gift close-ups, use the gift-guide band for the wish so the
+   officiant, altar and kneeling donor remain unobstructed. */
+.live-frame.cinematic .wish-banner {
+  top: 22.5%;
+}
+.live-frame.cinematic .gift-guide {
+  visibility: hidden;
+}

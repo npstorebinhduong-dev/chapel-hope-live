@@ -10,7 +10,7 @@ export function projectStage(x: number, z: number) {
       x: 0.5 + x * (0.095 - 0.01 * t),
       y: z < 18 ? 0.862 + 0.048 * t : 0.91 + (z - 18) * 0.033,
       height:
-        z < 18 ? 0.143 - 0.053 * t : 0.09 + Math.min(0.008, (z - 18) * 0.003),
+        z < 18 ? 0.143 - 0.068 * t : 0.075 + Math.min(0.045, (z - 18) * 0.014),
     };
   }
   const row = (z + 6.8) / 1.7;
@@ -34,22 +34,13 @@ export function projectStage(x: number, z: number) {
 export function stageEffect(
   active: ActiveGift | null | undefined,
   now: number,
-  camera: boolean,
 ) {
   if (!active || now < active.startedAt || now >= active.endsAt)
-    return { key: null, strength: 0, zoom: 1 };
+    return { key: null, strength: 0 };
   const t = (now - active.startedAt) / (active.endsAt - active.startedAt);
   const strength = Math.min(1, t * 6, (1 - t) * 6);
   const key = active.event.giftKey;
-  return {
-    key,
-    strength,
-    zoom:
-      1 +
-      (camera && (key === "altar_100" || key === "ceremony_500")
-        ? 0.018 * strength
-        : 0),
-  };
+  return { key, strength };
 }
 // Artist-generated atlas is deliberately described by measured source rectangles,
 // not assumed to be an exact regular grid. Walking cells are smaller in the source.

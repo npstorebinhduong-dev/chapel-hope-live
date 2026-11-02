@@ -81,7 +81,7 @@ await writeFile(
 );
 await writeFile(
   path.join(out, "HUONG_DAN.txt"),
-  `CHAPEL OF HOPE v1.6 — BẢN HTML XEM THỬ OFFLINE
+  `CHAPEL OF HOPE v1.7 — BẢN HTML XEM THỬ OFFLINE
 
 1. Giải nén toàn bộ ZIP.
 2. Mở index.html bằng Chrome hoặc Microsoft Edge (nhấp đúp hoặc Open with).

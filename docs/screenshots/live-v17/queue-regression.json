@@ -1,0 +1,102 @@
+{
+  "result": "passed",
+  "acceptance": {
+    "AMEN": 50,
+    "gifters": 5,
+    "waiting": 45,
+    "inside": 5,
+    "seated": 5,
+    "npcsExcluded": true
+  },
+  "stress": {
+    "AMEN": 100,
+    "gifts": 20,
+    "inside": 20,
+    "waiting": 80
+  },
+  "observedGifts": [
+    "candle_1",
+    "altar_100",
+    "bell_10",
+    "prayer_5",
+    "rose_5",
+    "ceremony_500"
+  ],
+  "audio": {
+    "audible": {
+      "mix": {
+        "master": 1,
+        "music": 0.22,
+        "ambient": 0.14,
+        "sfx": 0.45,
+        "voice": 0.85
+      },
+      "contextTime": 0.4005442176870748,
+      "chord": 0,
+      "running": true,
+      "voices": 0,
+      "level": 0.025238681365877653,
+      "triggers": 0,
+      "ducked": false,
+      "musicGain": 0.49972787499427795,
+      "ambientGain": 0.3720966577529907,
+      "sfxGain": 0.46175631880760193,
+      "masterGain": 0.5049930810928345,
+      "persistentSources": 4,
+      "peak": 0.053050294518470764
+    },
+    "sfx": {
+      "mix": {
+        "master": 1,
+        "music": 0.22,
+        "ambient": 0.14,
+        "sfx": 0.45,
+        "voice": 0.85
+      },
+      "contextTime": 49.92,
+      "chord": 0,
+      "running": true,
+      "voices": 2,
+      "level": 0.015513376032139673,
+      "triggers": 0,
+      "ducked": false,
+      "musicGain": 0.22002464532852173,
+      "ambientGain": 0.021003080531954765,
+      "sfxGain": 0.44999998807907104,
+      "masterGain": 0.549973726272583,
+      "persistentSources": 4,
+      "peak": 0.031415168195962906
+    },
+    "muted": {
+      "mix": {
+        "master": 1,
+        "music": 0.22,
+        "ambient": 0.14,
+        "sfx": 0.45,
+        "voice": 0.85
+      },
+      "contextTime": 51.641179138321995,
+      "chord": 0,
+      "running": true,
+      "voices": 0,
+      "level": 0,
+      "triggers": 0,
+      "ducked": false,
+      "musicGain": 0.22002464532852173,
+      "ambientGain": 0.021003080531954765,
+      "sfxGain": 0.44999998807907104,
+      "masterGain": 0,
+      "persistentSources": 4,
+      "peak": 0
+    },
+    "loopSeconds": 49.92,
+    "loopChords": [
+      0,
+      1,
+      2,
+      3
+    ]
+  },
+  "errors": [],
+  "notes": "Production UI/HTTP/WebSocket. Deterministic server clock jumps between complete journey boundaries for long gift queues; separate arrival captures show motion. Audio uses a real browser AudioContext with analyser signal; not a subjective speaker-quality review."
+}

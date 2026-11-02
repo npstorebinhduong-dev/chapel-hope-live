@@ -1,7 +1,7 @@
 {
   "name": "chapel-hope-live",
   "private": true,
-  "version": "1.6.0",
+  "version": "1.7.0",
   "workspaces": [
     "apps/*",
     "packages/*"
@@ -23,6 +23,7 @@
     "test:production": "node --import tsx scripts/production-browser.ts",
     "test:soak": "node --import tsx scripts/soak-v16.ts",
     "package:windows": "npm run build:windows && python3 scripts/package-windows.py",
+    "test:living": "node --import tsx scripts/living-browser.ts",
     "test:recorded": "node --import tsx scripts/recorded-browser.ts"
   },
   "devDependencies": {

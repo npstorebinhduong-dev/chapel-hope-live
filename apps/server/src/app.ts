@@ -112,11 +112,10 @@ export function createChapelServer(
   });
   const send = (ws: WebSocket, data: unknown) => {
     if (ws.readyState === WebSocket.OPEN) {
-      if (ws.bufferedAmount > 1_000_000) {
-        ws.terminate();
-        return;
-      }
-      ws.send(JSON.stringify(data));
+      // Snapshots supersede one another. Skip a stale update while a previous
+      // frame is in flight instead of queuing megabytes or disconnecting crowds.
+      if (ws.bufferedAmount > 0) return;
+      ws.send(typeof data === "string" ? data : JSON.stringify(data));
     }
   };
   const broadcast = () => {
@@ -125,7 +124,8 @@ export function createChapelServer(
       snapshot: snapshot(),
       metrics: [...metrics.values()],
     };
-    for (const ws of wss.clients) send(ws, message);
+    const encoded = JSON.stringify(message);
+    for (const ws of wss.clients) send(ws, encoded);
   };
   wss.on("connection", (ws) => {
     send(ws, {
@@ -167,7 +167,7 @@ export function createChapelServer(
       ok: true,
       mode: adapter.status.mode,
       product: "chapel-hope-live",
-      version: "1.6.0",
+      version: "1.7.0",
       source: adapter.status.connection,
       viewers: engine.attendees.size,
       queue: engine.queue.length,
@@ -309,7 +309,7 @@ export function createChapelServer(
       status: "completed",
       requested: input.data.count,
       joined,
-      capacity: 100,
+      capacity: null, // no fixed AMEN crowd cap; session TTL still applies
     });
   });
   app.post("/mock/acceptance", (_req, res) => {

@@ -1,0 +1,675 @@
+{
+  "result": "passed",
+  "realBrowserVoices": [],
+  "localeGiftBanners": 18,
+  "simulatedProviderCalls": [
+    {
+      "lang": "en-GB",
+      "text": "May a gentle light bring you peace."
+    },
+    {
+      "lang": "en-GB",
+      "text": "May you find strength and calm today."
+    },
+    {
+      "lang": "en-GB",
+      "text": "May love and kindness surround you."
+    },
+    {
+      "lang": "en-GB",
+      "text": "May this moment fill you with hope."
+    },
+    {
+      "lang": "en-GB",
+      "text": "Wishing you and your family peace."
+    },
+    {
+      "lang": "en-GB",
+      "text": "May peace and hope unite us all."
+    },
+    {
+      "lang": "vi-VN",
+      "text": "Mong ngọn nến nhỏ sưởi ấm phút giây tĩnh lặng của bạn."
+    },
+    {
+      "lang": "vi-VN",
+      "text": "Mong lòng kiên nhẫn và can đảm đồng hành cùng bạn."
+    },
+    {
+      "lang": "vi-VN",
+      "text": "Cầu chúc lòng nhân ái nở hoa trong mái ấm của bạn."
+    },
+    {
+      "lang": "vi-VN",
+      "text": "Mong tiếng chuông nhắc chúng ta quan tâm đến nhau."
+    },
+    {
+      "lang": "vi-VN",
+      "text": "Mong bạn và người thân tìm thấy niềm an ủi và hy vọng."
+    },
+    {
+      "lang": "vi-VN",
+      "text": "Cùng cầu chúc mọi gia đình bình an và những ngày tươi sáng."
+    },
+    {
+      "lang": "it-IT",
+      "text": "Che una luce gentile porti pace nel tuo cuore."
+    },
+    {
+      "lang": "it-IT",
+      "text": "Che tu possa trovare forza e serenità oggi."
+    },
+    {
+      "lang": "it-IT",
+      "text": "Che amore e gentilezza siano sempre con te."
+    },
+    {
+      "lang": "it-IT",
+      "text": "Che questo momento ti riempia di speranza."
+    },
+    {
+      "lang": "it-IT",
+      "text": "Auguro pace a te e alla tua famiglia."
+    },
+    {
+      "lang": "it-IT",
+      "text": "Che la pace e la speranza ci uniscano tutti."
+    }
+  ],
+  "acceptance": {
+    "waiting": 45,
+    "inside": 5
+  },
+  "musicLoopSeconds": 96.59791383219955,
+  "loopSamples": [
+    {
+      "time": 0.052244897959183675,
+      "chord": 0,
+      "level": 0.0012775555614286138,
+      "voices": 1
+    },
+    {
+      "time": 0.9520181405895691,
+      "chord": 0,
+      "level": 0.020912457709421767,
+      "voices": 1
+    },
+    {
+      "time": 1.8517913832199546,
+      "chord": 0,
+      "level": 0.021716284496505974,
+      "voices": 2
+    },
+    {
+      "time": 3.0505215419501135,
+      "chord": 0,
+      "level": 0.014787810274177257,
+      "voices": 2
+    },
+    {
+      "time": 3.9502947845804988,
+      "chord": 0,
+      "level": 0.007743915921786867,
+      "voices": 1
+    },
+    {
+      "time": 4.8500680272108845,
+      "chord": 0,
+      "level": 0.01758584872019265,
+      "voices": 2
+    },
+    {
+      "time": 6.051700680272109,
+      "chord": 0,
+      "level": 0.02308062577422426,
+      "voices": 2
+    },
+    {
+      "time": 6.951473922902494,
+      "chord": 0,
+      "level": 0.014262603437671051,
+      "voices": 1
+    },
+    {
+      "time": 7.85124716553288,
+      "chord": 0,
+      "level": 0.01641445286788862,
+      "voices": 2
+    },
+    {
+      "time": 9.041269841269841,
+      "chord": 0,
+      "level": 0.012222612944808536,
+      "voices": 2
+    },
+    {
+      "time": 9.95265306122449,
+      "chord": 0,
+      "level": 0.010101299345749451,
+      "voices": 1
+    },
+    {
+      "time": 11.15138321995465,
+      "chord": 0,
+      "level": 0.01404110751523306,
+      "voices": 1
+    },
+    {
+      "time": 12.051156462585034,
+      "chord": 1,
+      "level": 0.021456582290207596,
+      "voices": 2
+    },
+    {
+      "time": 12.950929705215419,
+      "chord": 1,
+      "level": 0.019562478244167153,
+      "voices": 1
+    },
+    {
+      "time": 14.152562358276644,
+      "chord": 1,
+      "level": 0.017585967696287477,
+      "voices": 1
+    },
+    {
+      "time": 15.05233560090703,
+      "chord": 1,
+      "level": 0.024483496699758626,
+      "voices": 2
+    },
+    {
+      "time": 15.952108843537415,
+      "chord": 1,
+      "level": 0.012803017543228325,
+      "voices": 1
+    },
+    {
+      "time": 17.150839002267574,
+      "chord": 1,
+      "level": 0.013580027776098624,
+      "voices": 1
+    },
+    {
+      "time": 18.05061224489796,
+      "chord": 1,
+      "level": 0.008085149998947811,
+      "voices": 2
+    },
+    {
+      "time": 18.950385487528344,
+      "chord": 1,
+      "level": 0.008431660006843669,
+      "voices": 1
+    },
+    {
+      "time": 20.15201814058957,
+      "chord": 1,
+      "level": 0.02140774652410181,
+      "voices": 1
+    },
+    {
+      "time": 21.051791383219953,
+      "chord": 1,
+      "level": 0.024017378620435393,
+      "voices": 2
+    },
+    {
+      "time": 21.95156462585034,
+      "chord": 1,
+      "level": 0.024602738760340234,
+      "voices": 1
+    },
+    {
+      "time": 23.1502947845805,
+      "chord": 1,
+      "level": 0.01321492276832145,
+      "voices": 1
+    },
+    {
+      "time": 24.050068027210884,
+      "chord": 2,
+      "level": 0.00827395137954393,
+      "voices": 2
+    },
+    {
+      "time": 24.952743764172336,
+      "chord": 2,
+      "level": 0.015123827368110661,
+      "voices": 1
+    },
+    {
+      "time": 26.151473922902493,
+      "chord": 2,
+      "level": 0.012745612170951326,
+      "voices": 1
+    },
+    {
+      "time": 27.051247165532878,
+      "chord": 2,
+      "level": 0.02161120279291526,
+      "voices": 2
+    },
+    {
+      "time": 28.252879818594103,
+      "chord": 2,
+      "level": 0.020529589412114895,
+      "voices": 1
+    },
+    {
+      "time": 29.15265306122449,
+      "chord": 2,
+      "level": 0.017862311759100958,
+      "voices": 1
+    },
+    {
+      "time": 30.052426303854876,
+      "chord": 2,
+      "level": 0.019150072421748945,
+      "voices": 2
+    },
+    {
+      "time": 31.251156462585033,
+      "chord": 2,
+      "level": 0.013911582211361307,
+      "voices": 1
+    },
+    {
+      "time": 32.15092970521542,
+      "chord": 2,
+      "level": 0.014037098089421957,
+      "voices": 1
+    },
+    {
+      "time": 33.05070294784581,
+      "chord": 2,
+      "level": 0.020492292041107623,
+      "voices": 2
+    },
+    {
+      "time": 34.25233560090703,
+      "chord": 2,
+      "level": 0.013015102927037824,
+      "voices": 1
+    },
+    {
+      "time": 35.15210884353741,
+      "chord": 2,
+      "level": 0.02143545432989782,
+      "voices": 1
+    },
+    {
+      "time": 36.0518820861678,
+      "chord": 3,
+      "level": 0.017933226314707177,
+      "voices": 2
+    },
+    {
+      "time": 37.25061224489796,
+      "chord": 3,
+      "level": 0.014094379836327218,
+      "voices": 1
+    },
+    {
+      "time": 38.15038548752835,
+      "chord": 3,
+      "level": 0.01892429821326795,
+      "voices": 1
+    },
+    {
+      "time": 39.05015873015873,
+      "chord": 3,
+      "level": 0.017063912736795677,
+      "voices": 2
+    },
+    {
+      "time": 40.25179138321995,
+      "chord": 3,
+      "level": 0.009928196762693386,
+      "voices": 1
+    },
+    {
+      "time": 41.15156462585034,
+      "chord": 3,
+      "level": 0.018492001509093307,
+      "voices": 1
+    },
+    {
+      "time": 42.05133786848072,
+      "chord": 3,
+      "level": 0.013446445766648517,
+      "voices": 2
+    },
+    {
+      "time": 43.25006802721089,
+      "chord": 3,
+      "level": 0.01768379839801789,
+      "voices": 1
+    },
+    {
+      "time": 44.152743764172335,
+      "chord": 3,
+      "level": 0.01878338384759056,
+      "voices": 1
+    },
+    {
+      "time": 45.35147392290249,
+      "chord": 3,
+      "level": 0.00808706165173037,
+      "voices": 2
+    },
+    {
+      "time": 46.25124716553288,
+      "chord": 3,
+      "level": 0.018128263529598312,
+      "voices": 1
+    },
+    {
+      "time": 47.15102040816326,
+      "chord": 3,
+      "level": 0.018835390138073314,
+      "voices": 1
+    },
+    {
+      "time": 48.35265306122449,
+      "chord": 0,
+      "level": 0.01371156608314298,
+      "voices": 2
+    },
+    {
+      "time": 49.252426303854875,
+      "chord": 0,
+      "level": 0.015447154754079784,
+      "voices": 1
+    },
+    {
+      "time": 50.152199546485264,
+      "chord": 0,
+      "level": 0.01404081384652123,
+      "voices": 1
+    },
+    {
+      "time": 51.35092970521542,
+      "chord": 0,
+      "level": 0.015703998186252677,
+      "voices": 2
+    },
+    {
+      "time": 52.2507029478458,
+      "chord": 0,
+      "level": 0.008211959709447486,
+      "voices": 1
+    },
+    {
+      "time": 53.15047619047619,
+      "chord": 0,
+      "level": 0.013896488017877365,
+      "voices": 1
+    },
+    {
+      "time": 54.352108843537415,
+      "chord": 0,
+      "level": 0.015051068653989155,
+      "voices": 2
+    },
+    {
+      "time": 55.251882086167804,
+      "chord": 0,
+      "level": 0.019496088538141224,
+      "voices": 1
+    },
+    {
+      "time": 56.151655328798185,
+      "chord": 0,
+      "level": 0.016155673807294105,
+      "voices": 1
+    },
+    {
+      "time": 57.35038548752834,
+      "chord": 0,
+      "level": 0.012205952026152298,
+      "voices": 2
+    },
+    {
+      "time": 58.25015873015873,
+      "chord": 0,
+      "level": 0.01971929902844265,
+      "voices": 1
+    },
+    {
+      "time": 59.451791383219955,
+      "chord": 0,
+      "level": 0.011274295296050256,
+      "voices": 1
+    },
+    {
+      "time": 60.35156462585034,
+      "chord": 1,
+      "level": 0.018883607218198924,
+      "voices": 2
+    },
+    {
+      "time": 61.251337868480725,
+      "chord": 1,
+      "level": 0.01382794419234833,
+      "voices": 1
+    },
+    {
+      "time": 62.45006802721088,
+      "chord": 1,
+      "level": 0.00892902192687041,
+      "voices": 1
+    },
+    {
+      "time": 63.35274376417234,
+      "chord": 1,
+      "level": 0.014740368677952297,
+      "voices": 2
+    },
+    {
+      "time": 64.25251700680272,
+      "chord": 1,
+      "level": 0.020897875362836823,
+      "voices": 1
+    },
+    {
+      "time": 65.45124716553288,
+      "chord": 1,
+      "level": 0.008994602320862178,
+      "voices": 1
+    },
+    {
+      "time": 66.35102040816327,
+      "chord": 1,
+      "level": 0.014526335872709208,
+      "voices": 2
+    },
+    {
+      "time": 67.25079365079365,
+      "chord": 1,
+      "level": 0.017107623475776174,
+      "voices": 1
+    },
+    {
+      "time": 68.45242630385488,
+      "chord": 1,
+      "level": 0.01567711066349702,
+      "voices": 1
+    },
+    {
+      "time": 69.35219954648527,
+      "chord": 1,
+      "level": 0.014311598180358064,
+      "voices": 2
+    },
+    {
+      "time": 70.25197278911564,
+      "chord": 1,
+      "level": 0.01435452881637348,
+      "voices": 1
+    },
+    {
+      "time": 71.4507029478458,
+      "chord": 1,
+      "level": 0.015562906239855491,
+      "voices": 1
+    },
+    {
+      "time": 72.35047619047619,
+      "chord": 2,
+      "level": 0.02133184203866189,
+      "voices": 2
+    },
+    {
+      "time": 73.55210884353741,
+      "chord": 2,
+      "level": 0.02220899361725817,
+      "voices": 2
+    },
+    {
+      "time": 74.4518820861678,
+      "chord": 2,
+      "level": 0.01707254226277739,
+      "voices": 1
+    },
+    {
+      "time": 75.35165532879819,
+      "chord": 2,
+      "level": 0.017505542542555614,
+      "voices": 2
+    },
+    {
+      "time": 76.55038548752835,
+      "chord": 2,
+      "level": 0.019517215114769247,
+      "voices": 2
+    },
+    {
+      "time": 77.45015873015873,
+      "chord": 2,
+      "level": 0.01757444841588322,
+      "voices": 1
+    },
+    {
+      "time": 78.35283446712018,
+      "chord": 2,
+      "level": 0.013566312890539183,
+      "voices": 2
+    },
+    {
+      "time": 79.55156462585035,
+      "chord": 2,
+      "level": 0.01273157675400001,
+      "voices": 2
+    },
+    {
+      "time": 80.45133786848072,
+      "chord": 2,
+      "level": 0.019173297140896873,
+      "voices": 1
+    },
+    {
+      "time": 81.35111111111111,
+      "chord": 2,
+      "level": 0.017440614005393654,
+      "voices": 2
+    },
+    {
+      "time": 82.55274376417233,
+      "chord": 2,
+      "level": 0.019489304026339513,
+      "voices": 2
+    },
+    {
+      "time": 83.45251700680272,
+      "chord": 2,
+      "level": 0.017901896914377956,
+      "voices": 1
+    },
+    {
+      "time": 84.35229024943311,
+      "chord": 3,
+      "level": 0.010242966680573362,
+      "voices": 2
+    },
+    {
+      "time": 85.55102040816327,
+      "chord": 3,
+      "level": 0.01368245811778676,
+      "voices": 2
+    },
+    {
+      "time": 86.45079365079366,
+      "chord": 3,
+      "level": 0.0071893522740440335,
+      "voices": 1
+    },
+    {
+      "time": 87.35056689342403,
+      "chord": 3,
+      "level": 0.017844192209109423,
+      "voices": 2
+    },
+    {
+      "time": 88.55219954648526,
+      "chord": 3,
+      "level": 0.01617725303216272,
+      "voices": 2
+    },
+    {
+      "time": 89.45197278911564,
+      "chord": 3,
+      "level": 0.013372703275206487,
+      "voices": 1
+    },
+    {
+      "time": 90.6507029478458,
+      "chord": 3,
+      "level": 0.02013597349550452,
+      "voices": 1
+    },
+    {
+      "time": 91.55047619047619,
+      "chord": 3,
+      "level": 0.01516933327077495,
+      "voices": 2
+    },
+    {
+      "time": 92.45024943310658,
+      "chord": 3,
+      "level": 0.01244135134924849,
+      "voices": 1
+    },
+    {
+      "time": 93.6518820861678,
+      "chord": 3,
+      "level": 0.017320304569038308,
+      "voices": 1
+    },
+    {
+      "time": 94.55165532879819,
+      "chord": 3,
+      "level": 0.01767364005874726,
+      "voices": 2
+    },
+    {
+      "time": 95.45142857142856,
+      "chord": 3,
+      "level": 0.02209972358184354,
+      "voices": 1
+    },
+    {
+      "time": 96.65015873015874,
+      "chord": 0,
+      "level": 0.010244598161553325,
+      "voices": 1
+    }
+  ],
+  "mutedRMS": 0,
+  "errors": [],
+  "limitations": [
+    "Provider call tests use explicit fake voices; no claim of native audible TTS in Linux.",
+    "No Windows/TikFinity real LIVE/capture verification.",
+    "Journey boundaries accelerated; music ran for two real-time loops."
+  ]
+}

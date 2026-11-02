@@ -1,4 +1,4 @@
-# Chapel of Hope LIVE v1.6 — Production LIVE Edition
+# Chapel of Hope LIVE v1.7 — Chuyển động, camera và đám đông
 
 Thánh đường châu Âu **2,5D**, khung dọc 9:16, hàng chờ AMEN, sáu quà, lời chúc Anh–Việt–Ý và adapter TikFinity Desktop. Đây là không gian ảo, không phải giáo xứ/bí tích thật; quà tạo hoạt cảnh, không hứa kết quả tâm linh.
 
@@ -6,7 +6,7 @@ Thánh đường châu Âu **2,5D**, khung dọc 9:16, hàng chờ AMEN, sáu qu
 
 ## Chạy Windows
 
-[Tải gói Windows production](https://github.com/npstorebinhduong-dev/chapel-hope-live/blob/feat/production-live-v1-6/downloads/Chapel-of-Hope-LIVE-v1.6-Windows.zip?raw=true).
+[Tải gói Windows production](https://github.com/npstorebinhduong-dev/chapel-hope-live/blob/feat/living-crowd-camera/downloads/Chapel-of-Hope-LIVE-v1.7-Windows.zip?raw=true).
 
 Giải nén toàn bộ, cài Node.js ≥22.12 (khuyến nghị 24 LTS), chạy **START_CHAPEL_LIVE.bat**. Script mở LIVE và Control sau khi health check đạt. Dừng bằng **STOP_CHAPEL_LIVE.bat**, chỉ dừng tiến trình do launcher tạo. ZIP có bundle production và asset, không chứa Node runtime/node_modules, không phải standalone EXE.
 
@@ -48,6 +48,7 @@ npm run typecheck
 npm test
 npm run build
 npm run test:browser
+npm run test:living
 npm run test:production
 npm run test:soak
 npm run build:windows
@@ -55,12 +56,14 @@ npm run build:windows
 
 Dev: Vite 5173 + server 3001; production chuẩn `npm run build` rồi `npm start`; bundle đầy đủ `npm run build:windows` rồi `node production/server.cjs`. `CHAPEL_CONFIG` tùy chọn đường dẫn JSON cấu hình operator. Giữ server bind loopback.
 
+`test:living` kiểm tra đám đông 20/50/100/1.000, idle 60 giây, hành trình thời gian thực, focus sáu quà, 30 quà liên tiếp và mất kết nối.
+
 `test:browser` kiểm tra gameplay 50+5/100+20/ghế đầy và audio. `test:production` kiểm tra 18 quà–locale, voice API contract có fixture giả được phân biệt với voices thật, hai vòng nhạc thực, UI mapping và preflight. `test:soak` mặc định 30 phút mock thời gian thực (đổi `SOAK_MINUTES` khi chẩn đoán; không gọi bài rút ngắn là soak 30 phút). Chromium mặc định `/usr/bin/chromium` trong cloud.
 
 `npm run build:preview` → HTML offline tự chứa tại `artifacts/html-preview/index.html`; `npm run test:preview`. HTML chỉ là preview Mock, mỗi tab một phiên, không nối TikFinity. `npm run package:windows` (máy đóng gói có Python 3) tạo ZIP có manifest SHA256, không node_modules.
 
 ## Giới hạn và bằng chứng
 
-Giữ atlas kiến trúc/nhân vật từ v1.4; thêm vật dâng, ánh sáng, micro-animation, blend và timeline. Chưa có mocap/quay nhân vật nhiều hướng; không gọi sprite là 3D photoreal. 100 viewer thông thường, 12 waiting hiển thị, 48 viewer seats + 16 NPC; tối đa một donor tạm nếu đã đầy 100. Queue gift 128, một hành trình/lối tại một thời điểm; burst cần chờ đi/về, full queue được báo rejected. Không cam kết nhận vô hạn.
+Giữ atlas kiến trúc/nhân vật từ v1.4; thêm vật dâng, ánh sáng, micro-animation, blend và timeline. Chưa có mocap/quay nhân vật nhiều hướng; không gọi sprite là 3D photoreal. Hàng chờ không còn trần 100 viewer hoặc 12 người hiển thị; đám đông tự tăng lớp/mật độ và giữ TTL 10 phút. 48 ghế viewer + 16 NPC + 8 chỗ đứng; khi đầy cả chỗ đứng, người tặng thực hiện nghi thức rồi đi ra. Queue gift 128, một hành trình/lối tại một thời điểm; burst cần chờ đi/về, full queue được báo rejected. Không cam kết nhận vô hạn.
 
-[Changelog và kết quả thực](docs/CHANGELOG_V1_6.md) · [Ảnh 9:16 và JSON kiểm thử](docs/screenshots/live-v16/README.md). Windows/TikFinity phiên LIVE/capture output phải xác nhận riêng trước khi ghi LIVE VERIFIED.
+[Changelog và kết quả thực](docs/CHANGELOG_V1_7.md) · [Ảnh 9:16 và JSON kiểm thử](docs/screenshots/live-v17/README.md). Windows/TikFinity phiên LIVE/capture output phải xác nhận riêng trước khi ghi LIVE VERIFIED.

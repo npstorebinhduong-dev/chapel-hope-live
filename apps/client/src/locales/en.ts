@@ -32,7 +32,7 @@ export const en = {
   high: "High",
   burst100: "100 visitors",
   capacities:
-    "100 session viewers · 12 visible waiting avatars · 48 viewer seats · 16 separate NPCs. Only gifts allow entry.",
+    "Adaptive waiting crowd · no fixed AMEN cap · 48 viewer seats + 8 standing places · 16 separate NPCs. Only gifts allow entry.",
   quiet: "A quiet moment, shared together",
   controlEyebrow: "CHAPEL OF HOPE / CONTROL ROOM",
   participationSection: "01 / PARTICIPATION",

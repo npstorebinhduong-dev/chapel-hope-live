@@ -25,17 +25,79 @@ export function easedAlongPath(path: Vec3[], progress: number): Vec3 {
       : p > 1 - edge
         ? 1 - edge - (1 - p) ** 2 / (2 * edge)
         : p - edge / 2;
-  return alongPath(path, integral / (1 - edge));
+  return alongPath(roundedPath(path), integral / (1 - edge));
 }
-export function waitingPosition(slot: number): Vec3 {
-  const row = Math.floor(slot / 6),
-    col = row % 2 ? 5 - (slot % 6) : slot % 6;
-  return [[-4.5, -3, -1.5, 1.5, 3, 4.5][col]!, 0, 18 + row * 2.4];
+// Round only a small radius inside the existing aisle/row corridor. Cache by
+// journey path identity; arc-length sampling keeps stride speed even at turns.
+const rounded = new WeakMap<Vec3[], Vec3[]>();
+export function roundedPath(path: Vec3[]): Vec3[] {
+  const cached = rounded.get(path);
+  if (cached) return cached;
+  const result: Vec3[] = [path[0]];
+  for (let i = 1; i < path.length - 1; i++) {
+    const a = path[i - 1],
+      b = path[i],
+      c = path[i + 1];
+    const before = Math.hypot(b[0] - a[0], b[2] - a[2]);
+    const after = Math.hypot(c[0] - b[0], c[2] - b[2]);
+    const radius = Math.min(0.12, before * 0.2, after * 0.2);
+    if (radius < 0.001) {
+      result.push(b);
+      continue;
+    }
+    const start: Vec3 = [
+      b[0] + ((a[0] - b[0]) * radius) / before,
+      0,
+      b[2] + ((a[2] - b[2]) * radius) / before,
+    ];
+    const end: Vec3 = [
+      b[0] + ((c[0] - b[0]) * radius) / after,
+      0,
+      b[2] + ((c[2] - b[2]) * radius) / after,
+    ];
+    result.push(start);
+    for (let j = 1; j <= 8; j++) {
+      const t = j / 8,
+        u = 1 - t;
+      result.push([
+        u * u * start[0] + 2 * u * t * b[0] + t * t * end[0],
+        0,
+        u * u * start[2] + 2 * u * t * b[2] + t * t * end[2],
+      ]);
+    }
+  }
+  result.push(path.at(-1)!);
+  rounded.set(path, result);
+  return result;
+}
+/** Dense foyer, not a fixed set of visible slots. Every viewer has a distinct
+ * position in the bottom band; a narrow central exit remains clear. */
+export function waitingPosition(slot: number, count = 1): Vec3 {
+  const columns = Math.max(
+    6,
+    Math.min(24, Math.ceil(Math.sqrt(Math.max(1, count) * 2))),
+  );
+  const half = Math.ceil(columns / 2),
+    row = Math.floor(slot / (half * 2));
+  const col = slot % (half * 2),
+    side = col < half ? -1 : 1;
+  const within = col % half;
+  const rows = Math.max(1, Math.ceil(count / (half * 2)));
+  const depth = rows === 1 ? 0 : row / Math.max(1, rows - 1);
+  // Break repeated vertical columns while keeping deterministic, stable targets.
+  const spacing = 3.4 / Math.max(1, half - 1);
+  const jitter = Math.sin(slot * 12.9898 + row * 4.31) * 0.2;
+  const stagger = (row % 2 ? 0.38 : -0.12) + jitter;
+  return [
+    side * Math.max(0.85, Math.min(4.55, 0.95 + (within + stagger) * spacing)),
+    0,
+    20.15 - depth * 2.1 + Math.sin(slot * 2.399) * 0.035,
+  ];
 }
 export function waitingPose(a: Attendee, now: number): Vec3 {
   const motion = a.queueMotion;
   if (!motion || now >= motion.endAt)
-    return waitingPosition(a.waitingSlot ?? 0);
+    return a.waitingTarget ?? waitingPosition(a.waitingSlot ?? 0);
   const t = smooth((now - motion.startAt) / (motion.endAt - motion.startAt));
   return motion.from.map(
     (value, i) => value + (motion.to[i] - value) * t,
@@ -43,12 +105,7 @@ export function waitingPose(a: Attendee, now: number): Vec3 {
 }
 export function queueExitPath(start: Vec3): Vec3[] {
   const lane = Math.sign(start[0] || 1) * 0.55;
-  return [
-    start,
-    [start[0], 0, start[2] + 1],
-    [lane, 0, start[2] + 1],
-    [lane, 0, 16],
-  ];
+  return [start, [start[0], 0, 17.2], [lane, 0, 17.2], [lane, 0, 16]];
 }
 export function giftApproach(a: Attendee, key: GiftKey, now: number): Vec3[] {
   const zone: Vec3 = [
@@ -57,11 +114,7 @@ export function giftApproach(a: Attendee, key: GiftKey, now: number): Vec3[] {
     -9,
   ];
   if (a.waitingSlot !== null && a.waitingSlot !== undefined) {
-    // Logical overflow enters from below the visible foyer, never materializes at altar.
-    const start =
-      a.waitingSlot < 12
-        ? waitingPose(a, now)
-        : waitingPosition(12 + (a.waitingSlot % 6));
+    const start = waitingPose(a, now);
     const exit = queueExitPath(start),
       lane = exit.at(-1)![0];
     return [...exit, [lane, 0, -9], zone];
@@ -120,12 +173,21 @@ export function attendeePose(
           : "gift_reacting",
         visible: true,
       };
+    if (now < (journey.departAt ?? journey.actionUntil))
+      return {
+        position: journey.approach.at(-1)!,
+        state: "praying_idle",
+        visible: true,
+      };
     if (now < journey.endAt)
       return {
         position: easedAlongPath(
           journey.departure,
-          (now - journey.actionUntil) /
-            Math.max(1, journey.endAt - journey.actionUntil),
+          (now - (journey.departAt ?? journey.actionUntil)) /
+            Math.max(
+              1,
+              journey.endAt - (journey.departAt ?? journey.actionUntil),
+            ),
         ),
         state: journey.kind === "leave" ? "leaving" : "returning",
         visible: true,
@@ -145,7 +207,7 @@ export function attendeePose(
           : a.admission === "invited"
             ? "called_by_gift"
             : "waiting",
-      visible: a.waitingSlot < 12,
+      visible: true,
     };
   const effect = active && now >= active.startedAt && now < active.endsAt;
   return {
@@ -171,7 +233,7 @@ export function isAttendeeMoving(a: Attendee, now: number): boolean {
   if (j) {
     if (now >= j.startAt && now < j.actionAt)
       return pathLength(j.approach) > 0.01;
-    if (now >= j.actionUntil && now < j.endAt)
+    if (now >= (j.departAt ?? j.actionUntil) && now < j.endAt)
       return pathLength(j.departure) > 0.01;
     return false;
   }
