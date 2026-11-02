@@ -23,6 +23,8 @@ The characters remain procedural fallbacks. There are no licensed human GLBs in 
 
 Next: licensed rigged people and clip retargeting following [ASSET_PIPELINE.md](ASSET_PIPELINE.md), foot IK and turn-in-place clips, GPU profiling on capture hardware, and localization.
 
-Final software-GPU samples: **20 attendees 5.8 FPS; 50 attendees 5.6 FPS; 100 attendees 4.9 FPS**. No browser page errors. These are foreground filled-scene measurements; the earlier multi-tab gameplay smoke run reported 1 FPS and is not directly comparable.
+Final software-GPU samples: **20 attendees 5.9 FPS; 50 attendees 5.5 FPS; 100 attendees 5.2 FPS**. No browser page errors. These are foreground filled-scene measurements; the earlier multi-tab gameplay smoke run reported 1 FPS and is not directly comparable.
 
 Saved evidence: [100-person overview](screenshots/v1.1/congregation-100.png), [altar moment](screenshots/v1.1/altar_100.png), [ceremony](screenshots/v1.1/ceremony_500.png), [control room](screenshots/v1.1/control.png), [measurement JSON](screenshots/v1.1/performance.json).
+
+Final pose review also moved kneeling bodies forward onto the kneeler, clear of the seat slab, and made internal NPC/presentation roles explicit so viewer pseudonyms cannot be mistaken for background actors. The production build and filled-scene browser captures were rerun after these corrections.

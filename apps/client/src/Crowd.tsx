@@ -28,7 +28,7 @@ export function Crowd({
   attendees,
   active,
 }: {
-  attendees: Attendee[];
+  attendees: (Attendee & { renderRole?: "npc" | "presenter" })[];
   active: ActiveGift | null;
 }) {
   const round = useRef<T.InstancedMesh>(null!),
@@ -81,7 +81,9 @@ export function Crowd({
         .slice(0, QUALITY[level].details)
         .map((a) => a.id),
     );
-    const ids = new Set(attendees.map((a) => a.userId));
+    const ids = new Set(
+      attendees.map((a) => `${a.renderRole ?? "viewer"}:${a.userId}`),
+    );
     for (const id of scratch.states.keys())
       if (!ids.has(id)) scratch.states.delete(id);
     const put = (
@@ -107,8 +109,9 @@ export function Crowd({
       mesh.setColorAt(index, scratch.color.set(color));
     };
     attendees.forEach((a, index) => {
-      const npc = a.userId.startsWith("npc-"),
-        presenter = a.userId.startsWith("presentation-");
+      const npc = a.renderRole === "npc",
+        presenter = a.renderRole === "presenter";
+      const renderId = `${a.renderRole ?? "viewer"}:${a.userId}`;
       const event = active?.presentation && !presenter ? null : active;
       const actor =
         presenter && active ? { ...a, userId: active.event.userId } : a;
@@ -120,7 +123,7 @@ export function Crowd({
             visible: true,
           }
         : attendeePose(actor, now, event);
-      let s = scratch.states.get(a.userId);
+      let s = scratch.states.get(renderId);
       if (!s) {
         s = {
           sit: pose.state === "seated" ? 1 : 0,
@@ -130,7 +133,7 @@ export function Crowd({
           z: pose.position[2],
           shown: 0,
         };
-        scratch.states.set(a.userId, s);
+        scratch.states.set(renderId, s);
       }
       const walking =
         pose.state === "walking_to_seat" ||
@@ -150,7 +153,15 @@ export function Crowd({
       if (!pose.visible && s.shown < 0.01) return;
       scratch.q.setFromAxisAngle(scratch.axis, s.yaw);
       scratch.root.compose(
-        new T.Vector3(s.x, 0, s.z),
+        // Move onto the kneeler before lowering the hips, clear of the seat slab.
+        new T.Vector3(
+          s.x,
+          0,
+          s.z -
+            (a.seat !== null && active?.event.giftKey !== "altar_100"
+              ? 0.65 * s.kneel
+              : 0),
+        ),
         scratch.q,
         new T.Vector3(1, s.shown, 1),
       );

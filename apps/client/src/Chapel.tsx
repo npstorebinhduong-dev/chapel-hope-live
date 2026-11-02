@@ -456,10 +456,18 @@ function Congregation() {
     <>
       <Crowd
         attendees={[
-          ...(showNpc ? npcs : []),
+          ...(showNpc
+            ? npcs.map((a) => ({ ...a, renderRole: "npc" as const }))
+            : []),
           ...attendees,
           ...(transient
-            ? [{ ...transient, userId: `presentation-${transient.userId}` }]
+            ? [
+                {
+                  ...transient,
+                  userId: `presentation-${transient.userId}`,
+                  renderRole: "presenter" as const,
+                },
+              ]
             : []),
         ]}
         active={active}

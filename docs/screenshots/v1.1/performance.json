@@ -4,15 +4,15 @@
   "results": [
     {
       "count": 20,
-      "fps": 5.8
+      "fps": 5.9
     },
     {
       "count": 50,
-      "fps": 5.6
+      "fps": 5.5
     },
     {
       "count": 100,
-      "fps": 4.9
+      "fps": 5.2
     }
   ],
   "errors": []
