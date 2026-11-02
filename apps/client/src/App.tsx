@@ -162,7 +162,7 @@ function LiveView() {
     </main>
   );
 }
-function ControlView() {
+export function ControlView() {
   const quality = useQuality((s) => s.level),
     setQuality = useQuality((s) => s.set);
   const state = useSession((s) => s.snapshot),

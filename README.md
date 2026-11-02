@@ -71,3 +71,9 @@ Các endpoint production `/api/health`, `/api/state`, `/api/mock/comment`, `/api
 ## Giới hạn hình ảnh cần biết
 
 Kiến trúc, tượng, vật liệu và phần đồ trang trí nền được vẽ sẵn trong một góc nhìn. Sprite có bốn nhân vật gốc nam/nữ, biến thể màu áo/chiều cao, các tư thế và dải bước đi; vẫn lặp lại nhận diện khi đông người. Chuyển tư thế bằng crossfade và nội suy; chưa có motion capture, xoay đa góc hay biến dạng skeleton. Đi ngang vào ghế vẫn có thể trông như sprite trượt. Mép che người bởi ghế được hiệu chỉnh theo phông, chưa phải depth map hình học hoàn chỉnh. Cần kiểm tra video thực trên máy phát trước khi xác nhận LIVE-ready.
+
+## Bản HTML mở trực tiếp, không cần Node trên máy người xem
+
+Chạy `npm run build:preview` để xuất `artifacts/html-preview/index.html`. Đây là **một file tự chứa** JavaScript, CSS và cả ba artwork; có thể giải nén ZIP rồi mở `index.html` bằng Chrome/Edge. Không cần server hoặc Internet. Mặc định có 50 khách mẫu và bảng thử AMEN/quà ngay cạnh cảnh. Mỗi trang là một phiên độc lập, tải lại khởi tạo lại dữ liệu; khung LIVE sạch mở ở tab khác không chia sẻ điều khiển.
+
+Bản export dùng cùng renderer và `ChapelEngine`; build chỉ thay transport HTTP/WS bằng store trong bộ nhớ trình duyệt. Ứng dụng production vẫn dùng server/WebSocket như trước. `npm run test:preview` kiểm tra tài liệu tự chứa, AMEN/dedup, 20/50/100 người, sáu quà, nến/hoa, camera, chất lượng và reset. Nếu chính sách Chromium cloud chặn `file://`, script ghi rõ và kiểm thử nội dung HTML qua tài liệu local được intercept, không backend, không tải tài nguyên ngoài. Không coi fallback đó là chứng minh đã kiểm tra double-click `file://` trên Windows.

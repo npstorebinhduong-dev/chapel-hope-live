@@ -30,13 +30,21 @@ export const useQuality = create<{
   level: "balanced",
   set: (level) => {
     set({ level });
-    localStorage.setItem("chapel-quality", level);
+    try {
+      localStorage.setItem("chapel-quality", level);
+    } catch {
+      /* Restricted file/private mode: keep the in-memory setting. */
+    }
   },
 }));
 const restore = () => {
-  const value = localStorage.getItem("chapel-quality");
-  if (value && value in QUALITY)
-    useQuality.setState({ level: value as Quality });
+  try {
+    const value = localStorage.getItem("chapel-quality");
+    if (value && value in QUALITY)
+      useQuality.setState({ level: value as Quality });
+  } catch {
+    /* Browser storage is optional for local HTML previews. */
+  }
 };
 restore();
 window.addEventListener("storage", restore);

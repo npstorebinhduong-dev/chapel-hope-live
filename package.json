@@ -17,7 +17,9 @@
     "test:browser": "tsx scripts/browser-smoke.ts",
     "start": "npm run start -w @chapel/server",
     "test:visual": "node --import tsx scripts/visual-stage.ts",
-    "test:visual:legacy": "node --import tsx scripts/visual-v12.ts"
+    "test:visual:legacy": "node --import tsx scripts/visual-v12.ts",
+    "build:preview": "node scripts/build-preview.mjs",
+    "test:preview": "node --import tsx scripts/preview-smoke.ts"
   },
   "devDependencies": {
     "@playwright/test": "^1.56.0",
