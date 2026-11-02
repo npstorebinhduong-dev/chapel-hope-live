@@ -1,4 +1,11 @@
 export const en = {
+  quality: "Rendering quality",
+  low: "Low",
+  balanced: "Balanced",
+  high: "High",
+  burst100: "100 visitors",
+  capacities:
+    "100 visitors · 48 viewer seats · 52 standing places · 16 separate background NPCs",
   quiet: "A quiet moment, shared together",
   controlEyebrow: "CHAPEL OF HOPE / CONTROL ROOM",
   participationSection: "01 / PARTICIPATION",

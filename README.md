@@ -1,4 +1,4 @@
-# Chapel of Hope LIVE — EU Edition
+# Chapel of Hope LIVE v1.1 — EU Edition
 
 A runnable, original procedural 3D **virtual chapel** for portrait 9:16 browser capture in OBS or LIVE Studio. Free `AMEN` comments add session visitors. Six optional mock gifts create visual moments. This is a fictional space, not a real parish or church service; gifts never promise blessings, healing or spiritual outcomes.
 
@@ -102,7 +102,7 @@ Software rendering in cloud Chromium is a functional check, **not proof of 30 FP
 - `tests`: gameplay and local HTTP/WebSocket tests.
 - `scripts/browser-smoke.ts`: real-browser functional validation and screenshots.
 
-All geometry, visual patterns and the synthesized chime are original procedural work. No third-party artwork, fonts, models or recordings are downloaded at runtime. `apps/client/src/assets.ts` defines a typed local licensed-GLB manifest. The scene and avatar renderer can load registered local GLBs through `useGLTF`, clone skinned skeletons and preserve procedural fallbacks when no asset is registered. Supply license/credit/scale metadata and place approved files under `apps/client/public/`. This is a replacement hook, not a completed animation retargeting pipeline; rig clips and better seated limb animation remain future work.
+All geometry, visual patterns and the synthesized chime are original procedural work. No third-party artwork, fonts, models or recordings are downloaded at runtime. `apps/client/src/assets.ts` defines a typed local licensed-GLB manifest. The environment renderer can load registered local GLBs through `useGLTF`. The humanoid manifest is an integration boundary for future licensed rigs; the v1.1 crowd uses its instanced procedural renderer. Supply license/credit/scale metadata and place approved files under `apps/client/public/`. This is a replacement hook, not a completed animation retargeting pipeline; rig clips and better seated limb animation remain future work.
 
 ## Known limitations and next iteration
 
@@ -111,3 +111,9 @@ Procedural humanoids, simple limb poses and geometric masonry are deliberately a
 Next: licensed environment/rigged human GLBs and LOD, animation retargeting, more natural mixed-traffic navigation, hardware FPS profiling at 1080×1920, Italian/Spanish dictionaries, and a separately authorized/verified platform adapter. Keep participation free and retain the explicit virtual disclosure.
 
 Original approved documents: [AGENTS.md](AGENTS.md), [technical specification](docs/TECH_SPEC_V1.md), [Task #01](docs/CODEX_PROMPT_01.md).
+
+## v1.1 visual and crowd upgrade
+
+See [the v1.1 changelog](docs/CHANGELOG_V1_1.md) and [licensed asset pipeline](docs/ASSET_PIPELINE.md). `/control` now offers 100-person bursts and Low / Balanced / High quality. The procedural crowd uses shared instanced articulated body parts, blended poses and distance-limited detail. The architecture adds layered pointed arches, masonry and stained-glass sunlight.
+
+After `npm run build`, run `node --import tsx scripts/stress-browser.ts` for filled 20/50/100-person screenshots and software-renderer FPS. Its output is in `artifacts/v1.1/`.

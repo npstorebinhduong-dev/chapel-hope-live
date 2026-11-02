@@ -303,3 +303,35 @@ test("AMEN during departure renews the same attendee and retained seat", () => {
   assert.equal(engine.attendees.get("renew")!.leaveAt, undefined);
   assert.equal(engine.attendees.get("renew")!.seat, seat);
 });
+
+test("v1.1 stress: 20/50/100 attendees and 20 simultaneous gifts drain without clones or camera locks", () => {
+  for (const count of [20, 50, 100]) {
+    const engine = new ChapelEngine();
+    for (let i = 0; i < count; i++) {
+      engine.comment(comment(`stress-${i}`));
+      engine.comment(comment(`stress-${i}`));
+    }
+    assert.equal(engine.attendees.size, count);
+    for (let i = 0; i < 20; i++)
+      assert.equal(
+        engine.gift(gift(giftKeys[i % 6], `stress-${i % count}`)).status,
+        "accepted",
+      );
+    let clock = now;
+    for (let i = 0; i < 22; i++) {
+      clock += 8000;
+      engine.tick(clock);
+    }
+    assert.equal(engine.completed, 20);
+    assert.equal(engine.queue.length, 0);
+    assert.equal(engine.active, null);
+    assert.equal(
+      new Set(
+        [...engine.attendees.values()]
+          .filter((a) => a.seat !== null)
+          .map((a) => a.seat),
+      ).size,
+      Math.min(48, count),
+    );
+  }
+});

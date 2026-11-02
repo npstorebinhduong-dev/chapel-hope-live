@@ -19,6 +19,9 @@ import {
 } from "@chapel/shared";
 import { useSession, renderClock, sendMetrics } from "./store";
 import { clone as cloneSkeleton } from "three/addons/utils/SkeletonUtils.js";
+import { Crowd } from "./Crowd";
+import { QUALITY, useQuality } from "./quality";
+import { GothicDetails } from "./GothicDetails";
 import { en } from "./strings";
 import { assets, type LicensedAsset } from "./assets";
 const EMPTY_ATTENDEES: Attendee[] = [];
@@ -216,8 +219,8 @@ function Pews() {
           return (
             <group key={`${row}-${side}`} position={[side * 3.3, 0, z]}>
               <Box p={[0, 0.65, 0]} s={[3.7, 0.17, 0.64]} c="#563825" />
-              <Box p={[0, 1.08, 0.3]} s={[3.7, 0.85, 0.13]} c={wood} />
-              <Box p={[0, 1.52, 0.3]} s={[3.8, 0.1, 0.2]} c="#69492d" />
+              <Box p={[0, 1.0, 0.3]} s={[3.7, 0.58, 0.13]} c={wood} />
+              <Box p={[0, 1.32, 0.3]} s={[3.8, 0.1, 0.2]} c="#69492d" />
               {[-1.85, 1.85].map((x) => (
                 <group key={x}>
                   <Box p={[x, 0.78, 0.05]} s={[0.16, 1.5, 0.9]} c={wood} />
@@ -411,138 +414,6 @@ function Architecture() {
     </group>
   );
 }
-const coats = [
-  "#55616b",
-  "#784b3f",
-  "#354b48",
-  "#6b5767",
-  "#b39a74",
-  "#435d72",
-  "#71634c",
-  "#67453c",
-  "#3e4655",
-  "#676f61",
-  "#846753",
-  "#514158",
-];
-function Humanoid({
-  attendee,
-  npc = false,
-}: {
-  attendee: Attendee;
-  npc?: boolean;
-}) {
-  const group = useRef<THREE.Group>(null!);
-  const body = useRef<THREE.Group>(null!);
-  const legs = useRef<THREE.Group>(null!);
-  const arms = useRef<THREE.Group>(null!);
-  const active = useSession((s) => s.snapshot?.active ?? null);
-  const coat = coats[attendee.variant % coats.length];
-  const skin = ["#dfb58f", "#ad7957", "#81553e", "#d5a17c"][
-    attendee.variant % 4
-  ];
-  useFrame(() => {
-    const now = renderClock();
-    const pose = npc
-      ? {
-          position: destination(attendee),
-          state:
-            active?.event.giftKey === "ceremony_500" ? "kneeling" : "seated",
-          visible: true,
-        }
-      : attendeePose(attendee, now, active);
-    group.current.visible = pose.visible;
-    group.current.position.set(pose.position[0], 0, pose.position[2]);
-    const seated =
-      pose.state === "seated" ||
-      (pose.state === "gift_reacting" &&
-        attendee.seat !== null &&
-        active?.event.giftKey !== "altar_100");
-    const kneel = pose.state === "kneeling";
-    const walking =
-      pose.state === "walking_to_seat" ||
-      pose.state === "leaving" ||
-      (pose.state === "gift_reacting" && active?.event.giftKey === "altar_100");
-    body.current.position.y = seated ? 0.02 : kneel ? -0.35 : 0;
-    body.current.rotation.x = kneel
-      ? -0.18
-      : pose.state === "gift_reacting"
-        ? -0.08
-        : 0;
-    legs.current.visible = !seated && !assets.humanoid;
-    legs.current.scale.y = kneel ? 0.52 : 1;
-    if (walking) {
-      body.current.position.y +=
-        Math.sin(now * 0.012 + attendee.variant) * 0.035;
-      legs.current.rotation.x = Math.sin(now * 0.012) * 0.15;
-    } else legs.current.rotation.x = 0;
-    if (arms.current)
-      arms.current.rotation.x =
-        kneel || pose.state === "gift_reacting" ? -0.9 : 0;
-  });
-  return (
-    <group ref={group}>
-      <group ref={legs} visible={!assets.humanoid}>
-        {[-0.14, 0.14].map((x) => (
-          <group key={x}>
-            <mesh position={[x, 0.36, 0]} castShadow>
-              <capsuleGeometry args={[0.105, 0.46, 3, 6]} />
-              <meshStandardMaterial color="#282932" />
-            </mesh>
-            <mesh position={[x, 0.08, -0.08]} scale={[1, 0.6, 1.8]}>
-              <sphereGeometry args={[0.12, 6, 6]} />
-              <meshStandardMaterial color="#201c1b" />
-            </mesh>
-          </group>
-        ))}
-      </group>
-      <group ref={body}>
-        {assets.humanoid ? (
-          <LicensedModel asset={assets.humanoid} />
-        ) : (
-          <>
-            <mesh position={[0, 0.99, 0]} castShadow>
-              <cylinderGeometry args={[0.23, 0.29, 0.68, 7]} />
-              <meshStandardMaterial color={coat} roughness={0.95} />
-            </mesh>
-            <mesh position={[0, 1.57, 0]} castShadow scale={[0.9, 1.13, 0.95]}>
-              <sphereGeometry args={[0.205, 10, 8]} />
-              <meshStandardMaterial color={skin} />
-            </mesh>
-            <mesh position={[0, 1.68, 0.025]} scale={[1, 0.65, 1]}>
-              <sphereGeometry args={[0.207, 10, 8]} />
-              <meshStandardMaterial
-                color={attendee.variant % 3 ? "#3e3027" : "#938679"}
-              />
-            </mesh>
-            <mesh position={[0, 1.56, -0.19]}>
-              <sphereGeometry args={[0.045, 6, 6]} />
-              <meshStandardMaterial color={skin} />
-            </mesh>
-            <group ref={arms} position={[0, 1.23, 0]}>
-              {[-1, 1].map((side) => (
-                <group
-                  key={side}
-                  position={[side * 0.28, -0.2, 0]}
-                  rotation={[0, 0, side * 0.12]}
-                >
-                  <mesh castShadow>
-                    <capsuleGeometry args={[0.085, 0.35, 3, 6]} />
-                    <meshStandardMaterial color={coat} />
-                  </mesh>
-                  <mesh position={[0, -0.27, 0]}>
-                    <sphereGeometry args={[0.075, 6, 6]} />
-                    <meshStandardMaterial color={skin} />
-                  </mesh>
-                </group>
-              ))}
-            </group>
-          </>
-        )}
-      </group>
-    </group>
-  );
-}
 const npcs: Attendee[] = Array.from({ length: 16 }, (_, i) => ({
   userId: `npc-${i}`,
   username: "Background NPC",
@@ -560,7 +431,7 @@ function Congregation() {
   const selected = attendees.find((a) => a.userId === active?.event.userId);
   const transient =
     active &&
-    !selected &&
+    (!selected || active.presentation) &&
     (active.event.giftKey === "prayer_5" ||
       active.event.giftKey === "altar_100")
       ? ({
@@ -583,11 +454,16 @@ function Congregation() {
   });
   return (
     <>
-      {showNpc && npcs.map((a) => <Humanoid key={a.userId} attendee={a} npc />)}
-      {attendees.map((a) => (
-        <Humanoid key={a.userId} attendee={a} />
-      ))}
-      {transient && <Humanoid attendee={transient} />}
+      <Crowd
+        attendees={[
+          ...(showNpc ? npcs : []),
+          ...attendees,
+          ...(transient
+            ? [{ ...transient, userId: `presentation-${transient.userId}` }]
+            : []),
+        ]}
+        active={active}
+      />
       {selected && (
         <group ref={label}>
           <Html center distanceFactor={15} style={{ pointerEvents: "none" }}>
@@ -603,9 +479,10 @@ function Atmosphere() {
   const dummy = useMemo(() => new THREE.Object3D(), []);
   const beam = useRef<THREE.SpotLight>(null!);
   const active = useSession((s) => s.snapshot?.active ?? null);
-  useFrame(() => {
+  const quality = QUALITY[useQuality((s) => s.level)];
+  useFrame((_state, delta) => {
     const t = renderClock() / 1000;
-    for (let i = 0; i < 48; i++) {
+    for (let i = 0; i < quality.particles; i++) {
       dummy.position.set(
         Math.sin(i * 127.1) * 5.4,
         1 + ((i * 0.371 + t * 0.045) % 7),
@@ -615,13 +492,20 @@ function Atmosphere() {
       dummy.updateMatrix();
       particles.current.setMatrixAt(i, dummy.matrix);
     }
+    particles.current.count = quality.particles;
     particles.current.instanceMatrix.needsUpdate = true;
-    beam.current.intensity =
+    const targetIntensity =
       active?.event.giftKey === "ceremony_500"
         ? 100
         : active?.event.giftKey === "altar_100"
           ? 65
           : 24;
+    beam.current.intensity = THREE.MathUtils.damp(
+      beam.current.intensity,
+      targetIntensity,
+      2,
+      delta,
+    );
   });
   return (
     <>
@@ -631,8 +515,8 @@ function Atmosphere() {
         position={[3, 10, -5]}
         intensity={2.3}
         color="#ffdc9d"
-        castShadow
-        shadow-mapSize={[1024, 1024]}
+        castShadow={quality.shadows}
+        shadow-mapSize={[quality.shadowSize, quality.shadowSize]}
         shadow-camera-left={-9}
         shadow-camera-right={9}
         shadow-camera-top={12}
@@ -665,7 +549,7 @@ function Atmosphere() {
         color="#ffd69b"
         distance={16}
       />
-      <instancedMesh ref={particles} args={[undefined, undefined, 48]}>
+      <instancedMesh ref={particles} args={[undefined, undefined, 64]}>
         <sphereGeometry args={[1, 4, 4]} />
         <meshBasicMaterial color="#e9cb8c" transparent opacity={0.35} />
       </instancedMesh>
@@ -729,7 +613,8 @@ function Director() {
     if (
       active &&
       state?.settings.camera &&
-      renderClock() < active.endsAt - 400
+      state.now + performance.now() - useSession.getState().receivedAt <
+        active.endsAt - 400
     ) {
       const key = active.event.giftKey;
       if (key === "candle_1") {
@@ -797,6 +682,7 @@ class SceneBoundary extends Component<
   }
 }
 export function Chapel() {
+  const quality = QUALITY[useQuality((s) => s.level)];
   const [contextLost, setContextLost] = useState(false);
   return (
     <SceneBoundary>
@@ -807,8 +693,8 @@ export function Chapel() {
         </div>
       ) : (
         <Canvas
-          shadows
-          dpr={[0.75, 1.35]}
+          shadows={quality.shadows}
+          dpr={quality.dpr}
           camera={{ position: [0, 7.5, 18], fov: 52, near: 0.1, far: 85 }}
           gl={{ antialias: true, powerPreference: "high-performance" }}
           onCreated={({ gl }) => {
@@ -827,12 +713,12 @@ export function Chapel() {
           <fog attach="fog" args={["#302c25", 26, 60]} />
           <Suspense fallback={null}>
             <Architecture />
+            <GothicDetails />
             <Congregation />
             <Atmosphere />
             <Bell />
           </Suspense>
           <Director />
-          <AdaptiveDpr pixelated />
         </Canvas>
       )}
     </SceneBoundary>

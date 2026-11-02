@@ -1,0 +1,19 @@
+{
+  "renderer": "Chromium SwiftShader software GPU",
+  "arrivalSetup": "Arrival clocks advanced by 120 seconds to measure fully populated scenes",
+  "results": [
+    {
+      "count": 20,
+      "fps": 5.8
+    },
+    {
+      "count": 50,
+      "fps": 5.6
+    },
+    {
+      "count": 100,
+      "fps": 4.9
+    }
+  ],
+  "errors": []
+}

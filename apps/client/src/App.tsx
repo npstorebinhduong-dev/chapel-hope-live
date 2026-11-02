@@ -1,3 +1,4 @@
+import { QUALITY, useQuality, type Quality } from "./quality";
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { GIFTS, giftKeys, type GiftKey } from "@chapel/shared";
 const Chapel = lazy(() =>
@@ -157,6 +158,8 @@ function LiveView() {
   );
 }
 function ControlView() {
+  const quality = useQuality((s) => s.level),
+    setQuality = useQuality((s) => s.set);
   const state = useSession((s) => s.snapshot),
     connected = useSession((s) => s.connected),
     fps = useSession((s) => s.fps);
@@ -256,6 +259,12 @@ function ControlView() {
               >
                 + {en.burst50}
               </button>
+              <button
+                disabled={busy || !connected}
+                onClick={() => void run("mock/spam-amen", { count: 100 })}
+              >
+                + {en.burst100}
+              </button>
             </div>
           </section>
           <section className="panel">
@@ -292,6 +301,21 @@ function ControlView() {
           <section className="panel">
             <div className="section-number">{en.presentationSection}</div>
             <h2>{en.settings}</h2>
+            <label className="toggle">
+              {en.quality}
+              <select
+                aria-label={en.quality}
+                value={quality}
+                onChange={(e) => setQuality(e.target.value as Quality)}
+              >
+                {Object.keys(QUALITY).map((key) => (
+                  <option key={key} value={key}>
+                    {en[key as Quality]}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <p>{en.capacities}</p>
             <div className="toggles">
               {(["npcs", "muted", "camera"] as const).map((key) => (
                 <label key={key} className="toggle">

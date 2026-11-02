@@ -743,3 +743,43 @@ dd {
     font-size: 8px;
   }
 }
+
+/* Keep the architectural focal point and lower app controls clear. */
+.live-header {
+  top: 3%;
+}
+.live-header h1 {
+  font-size: 5.5cqw;
+  margin: 1.8cqw 0;
+}
+.live-header .join-note {
+  display: none;
+}
+.presence {
+  top: 18%;
+}
+.ceremony-banner {
+  top: 25%;
+  padding: 2cqw 0;
+}
+.ceremony-banner h2 {
+  font-size: 3.5cqw;
+}
+.gift-guide {
+  padding: 2cqw 0;
+  gap: 2cqw 1cqw;
+}
+.live-bottom {
+  bottom: 2%;
+}
+.supporters {
+  min-height: 10cqw;
+  padding: 2cqw 0;
+}
+.toggle select {
+  background: #24241c;
+  color: #e8d8b9;
+  border: 1px solid #716044;
+  padding: 9px;
+  border-radius: 4px;
+}
