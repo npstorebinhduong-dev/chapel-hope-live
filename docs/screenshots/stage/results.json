@@ -1,0 +1,57 @@
+{
+  "viewport": "540x960",
+  "quality": "Balanced",
+  "renderer": "Chromium Canvas2D / headless cloud",
+  "hardware": {
+    "platform": "linux",
+    "arch": "x64",
+    "cpus": 5,
+    "cpu": "AMD EPYC 9V74 80-Core Processor"
+  },
+  "samples": [
+    {
+      "attendees": 0,
+      "rafFps": 48.2,
+      "renderFps": 48.1
+    },
+    {
+      "attendees": 20,
+      "rafFps": 53.5,
+      "renderFps": 53.4
+    },
+    {
+      "attendees": 50,
+      "rafFps": 54.9,
+      "renderFps": 55.1
+    },
+    {
+      "attendees": 100,
+      "rafFps": 49.4,
+      "renderFps": 49.4
+    }
+  ],
+  "qualitySamples": [
+    {
+      "quality": "low",
+      "attendees": 100,
+      "viewport": "1080x1920",
+      "renderFps": 24.7
+    },
+    {
+      "quality": "balanced",
+      "attendees": 100,
+      "viewport": "1080x1920",
+      "renderFps": 20.2
+    },
+    {
+      "quality": "high",
+      "attendees": 100,
+      "viewport": "1080x1920",
+      "renderFps": 14.2
+    }
+  ],
+  "errors": [],
+  "staleStreamFocusRecovery": "passed",
+  "walkingSprite": "passed",
+  "notes": "FPS sampled with real-time animation. Arrival clocks advanced 120s to populate seating. Gift screenshots pause the server snapshot clock at 45% of the real effect duration for reproducible capture."
+}

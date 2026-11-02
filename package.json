@@ -1,7 +1,7 @@
 {
   "name": "chapel-hope-live",
   "private": true,
-  "version": "1.2.0",
+  "version": "1.3.0",
   "workspaces": [
     "apps/*",
     "packages/*"
@@ -16,7 +16,8 @@
     "test": "tsx --test tests/*.test.ts",
     "test:browser": "tsx scripts/browser-smoke.ts",
     "start": "npm run start -w @chapel/server",
-    "test:visual": "node --import tsx scripts/visual-v12.ts"
+    "test:visual": "node --import tsx scripts/visual-stage.ts",
+    "test:visual:legacy": "node --import tsx scripts/visual-v12.ts"
   },
   "devDependencies": {
     "@playwright/test": "^1.56.0",

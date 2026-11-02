@@ -1,4 +1,6 @@
 export const en = {
+  stageError:
+    "The local stage artwork could not load. Check the installation and reload.",
   specialPrayer: "Special Prayer",
   quality: "Rendering quality",
   low: "Low",
@@ -18,7 +20,7 @@ export const en = {
   queueFull: "Gift queue full. This event was not accepted; retry shortly.",
 
   title: "CHAPEL OF HOPE",
-  edition: "THE VIRTUAL CHAPEL · EU EDITION",
+  edition: "THE VIRTUAL CHAPEL · EUROPEAN STAGE",
   join: "Type AMEN to join",
   joinNote: "A place for a quiet moment. Participation is always free.",
   disclosure: "Virtual chapel experience",
@@ -73,10 +75,10 @@ export const en = {
   fpsGoal:
     "30 FPS is a target, not a guarantee. Background NPCs are simulated.",
   footer:
-    "An original procedural scene. Placeholder avatars; no real parish or service.",
+    "Original 2.5D artwork and animated sprites. Fictional chapel; no real parish or service.",
   labelGift: "gift actions",
   resetDone: "Session reset",
-  scene: "Virtual chapel 3D scene",
+  scene: "Virtual chapel 2.5D scene",
   online: "LOCAL MOCK CONNECTED",
   soundLocked: "Sound needs a click in this tab",
   ack: "Simulation accepted",

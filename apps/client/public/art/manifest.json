@@ -1,0 +1,22 @@
+{
+  "created": "2026-11-02",
+  "source": "Original fictional artwork generated with the image generation tool for this task; no external stock assets",
+  "rightsNote": "Generated output; do not infer CC0 or third-party model licenses. Applicable service terms and project rights govern use.",
+  "assets": [
+    {
+      "file": "chapel-stage.png",
+      "sha256": "55d74b791fa98da7223d07086076649d3bc0b9c904ea3eb2dba84e5a6260dd80",
+      "bytes": 2846165
+    },
+    {
+      "file": "people-atlas.png",
+      "sha256": "7ca197370e2076352824682f3cec043226867160a4018aea440cf9516a754d4f",
+      "bytes": 1034655
+    },
+    {
+      "file": "walk-atlas.png",
+      "sha256": "dc4e8f665f56504f95e86f82c12c6430995dc4ded709a2b9f26fc837928a9cfc",
+      "bytes": 1099059
+    }
+  ]
+}

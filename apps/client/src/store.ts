@@ -58,9 +58,9 @@ export const renderClock = () => {
         (s.connected ? Math.min(performance.now() - s.receivedAt, 300) : 0)
     : Date.now();
 };
-export const sendMetrics = (fps: number) => {
+export const sendMetrics = (fps: number, renderer = "WebGL") => {
   if (socket?.readyState === WebSocket.OPEN)
-    socket.send(JSON.stringify({ type: "metrics", fps, renderer: "WebGL" }));
+    socket.send(JSON.stringify({ type: "metrics", fps, renderer }));
 };
 export async function post(endpoint: string, data: unknown) {
   const response = await fetch(`/api/${endpoint}`, {

@@ -147,7 +147,7 @@ try {
           result: "passed",
           checks: [
             "production pages",
-            "WebGL canvas",
+            "2.5D Canvas2D renderer",
             "live/control isolation",
             "AMEN dedup",
             "six gift playback",
@@ -162,7 +162,7 @@ try {
           observedGifts: [...observed],
           rendererFps: telemetry,
           renderer:
-            "Chromium SwiftShader (software; not a hardware performance benchmark)",
+            "Chromium Canvas2D; multi-tab functional test, not a performance benchmark",
           screenshots: [
             "artifacts/chapel-overview.png",
             "artifacts/chapel-ceremony.png",

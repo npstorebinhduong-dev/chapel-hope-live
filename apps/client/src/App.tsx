@@ -2,7 +2,7 @@ import { QUALITY, useQuality, type Quality } from "./quality";
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { GIFTS, giftKeys, type GiftKey } from "@chapel/shared";
 const Chapel = lazy(() =>
-  import("./Chapel").then((module) => ({ default: module.Chapel })),
+  import("./StageChapel").then((module) => ({ default: module.StageChapel })),
 );
 import { connectSession, post, useSession } from "./store";
 import { unlockAudio, playBell } from "./audio";
