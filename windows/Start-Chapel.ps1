@@ -23,7 +23,7 @@ try {
   try { $health = Invoke-RestMethod 'http://127.0.0.1:3001/api/health' -TimeoutSec 2 } catch {}
   if ($health -and $health.product -eq 'chapel-hope-live') {
     Write-Host ('Existing Chapel server: ' + $health.version + ' / source ' + $health.mode)
-    if ($health.version -ne '1.7.0') { throw 'Another Chapel version is running. Stop it with its own launcher before starting v1.7.' }
+    if ($health.version -ne '1.9.0') { throw 'Another Chapel version is running. Stop it with its own launcher before starting v1.9.' }
   } else {
     if (Get-NetTCPConnection -LocalPort 3001 -State Listen -ErrorAction SilentlyContinue) { throw 'Port 3001 belongs to another program. Stop/change that program; this launcher will not kill it.' }
     $token = [guid]::NewGuid().ToString('N')

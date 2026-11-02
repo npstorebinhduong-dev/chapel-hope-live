@@ -42,7 +42,11 @@ test("TikFinity replay: chat/gender, six IDs, two five-coin gifts, streak final 
     events: any[] = [];
   const adapter = new TikFinityEventAdapter((e) => {
     events.push(e);
-    return e.type === "gift" ? engine.gift(e, 1000) : engine.comment(e, 1000);
+    return e.type === "gift"
+      ? engine.gift(e, 1000)
+      : e.type === "comment"
+        ? engine.comment(e, 1000)
+        : engine.engage(e, 1000);
   });
   adapter.configure({
     mode: "tikfinity",
@@ -136,7 +140,11 @@ test("30 gifts complete without duplicates or dropped events; repeat cap and ide
   const engine = new ChapelEngine();
   let now = 1000;
   const adapter = new TikFinityEventAdapter((e) =>
-    e.type === "gift" ? engine.gift(e, now) : engine.comment(e, now),
+    e.type === "gift"
+      ? engine.gift(e, now)
+      : e.type === "comment"
+        ? engine.comment(e, now)
+        : engine.engage(e, now),
   );
   adapter.configure({
     mode: "tikfinity",
@@ -168,17 +176,20 @@ test("30 gifts complete without duplicates or dropped events; repeat cap and ide
   assert.equal(engine.rejected, 0);
   assert.equal(engine.candles, 24);
 });
-test("36 exact-language wishes, independent gift rotation and matching voice language only", () => {
+test("54 exact-language wishes, independent gift rotation and matching voice language only", () => {
   for (const locale of ["en", "vi", "it"] as const) {
     assert.equal(
       new Set(Object.values(giftVoiceLines[locale]).flat()).size,
-      12,
+      18,
     );
     const rotation = new LineRotation();
     for (const key of giftKeys) {
       const first = rotation.next(locale, key);
       const second = rotation.next(locale, key);
       assert.notEqual(first.text, second.text);
+      const third = rotation.next(locale, key);
+      assert.notEqual(third.text, first.text);
+      assert.notEqual(third.text, second.text);
       assert.equal(rotation.next(locale, key).text, first.text);
     }
   }
@@ -255,7 +266,11 @@ test("voice queue serializes, coalesces overload, restores ducking and never sub
   finish("ended");
   await new Promise((r) => setTimeout(r, 0));
   assert.deepEqual(started, ["a", "big"]);
-  assert.deepEqual(ducks.slice(0, 3), [true, false, true]);
+  assert.deepEqual(
+    ducks,
+    [true, true],
+    "music stays ducked between adjacent voices",
+  );
   queue.stop();
   assert.equal(ducks.at(-1), false);
   assert.equal(queue.pending.length, 0);

@@ -1,0 +1,16 @@
+{
+  "version": "1.9.0",
+  "unitIntegration": {
+    "passed": 45,
+    "failed": 0
+  },
+  "typecheck": "passed",
+  "build": "passed",
+  "npmCi": "passed (198 packages; dependencies unchanged)",
+  "powershell": "syntax passed on Linux; Windows execution pending",
+  "browser": "see browser.json",
+  "html": "see html-test-results.json",
+  "package": "see package-check.json",
+  "liveVerified": false,
+  "note": "No actual Windows/TikTok LIVE/capture session in cloud"
+}

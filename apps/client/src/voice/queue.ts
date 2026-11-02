@@ -25,6 +25,13 @@ export class VoiceQueue {
   enqueue(job: VoiceJob) {
     if (this.active?.id === job.id || this.pending.some((j) => j.id === job.id))
       return;
+    if (this.active && this.active.priority < 0 && job.priority >= 0) {
+      clearTimeout(this.deadline);
+      this.generation++;
+      this.active.provider.cancel();
+      this.active = null;
+      this.skipped++;
+    }
     if (!this.active) {
       this.pending.push(job);
       this.pump();
@@ -34,8 +41,15 @@ export class VoiceQueue {
       this.pending.length >= 4 ||
       (job.priority === 0 && this.pending.some((j) => j.priority === 0))
     ) {
+      const low = this.pending.reduce(
+        (n, j, i) => (j.priority < this.pending[n].priority ? i : n),
+        0,
+      );
+      if (job.priority > this.pending[low].priority) {
+        this.pending.splice(low, 1);
+        this.pending.push(job);
+      } else this.deferredBanner = job;
       this.skipped++;
-      this.deferredBanner = job;
       return;
     }
     this.pending.push(job);
@@ -52,6 +66,7 @@ export class VoiceQueue {
       return true;
     });
     if (!this.pending.length) {
+      this.duck(false);
       if (this.deferredBanner) {
         this.banner(this.deferredBanner);
         this.deferredBanner = null;
@@ -78,7 +93,6 @@ export class VoiceQueue {
       if (finished || generation !== this.generation) return;
       finished = true;
       clearTimeout(deadline);
-      this.duck(false);
       this.result(status);
       this.active = null;
       this.pump();

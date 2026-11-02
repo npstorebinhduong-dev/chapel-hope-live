@@ -4,11 +4,11 @@ import { mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { randomUUID } from "node:crypto";
-const root = await mkdtemp(join(tmpdir(), "chapel-v17-package-"));
+const root = await mkdtemp(join(tmpdir(), "chapel-v19-package-"));
 execFileSync("python3", [
   "-c",
   "import zipfile,sys; z=zipfile.ZipFile(sys.argv[1]); assert z.testzip() is None; z.extractall(sys.argv[2])",
-  resolve("downloads/Chapel-of-Hope-LIVE-v1.7-Windows.zip"),
+  resolve("downloads/Chapel-of-Hope-LIVE-v1.9-Windows.zip"),
   root,
 ]);
 const token = randomUUID(),
@@ -34,7 +34,7 @@ try {
   }
   expect(ready).toBe(true);
   const health = await (await fetch(base + "/health")).json();
-  expect(health.version).toBe("1.7.0");
+  expect(health.version).toBe("1.9.0");
   const page = await browser.newPage({ viewport: { width: 540, height: 960 } });
   await page.goto(base);
   await expect(page.getByTestId("stage-canvas")).toHaveAttribute(
@@ -58,10 +58,12 @@ try {
     "0",
   );
   await page.goto(base + "/control");
-  await expect(page.getByText(/Adaptive waiting crowd/)).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Bảng điều hành Chapel of Hope" }),
+  ).toBeVisible();
   await page.setViewportSize({ width: 1280, height: 1000 });
   await page.screenshot({
-    path: "docs/screenshots/live-v17/control.png",
+    path: "docs/screenshots/live-v19/control.png",
     fullPage: true,
   });
   const stop = await fetch(base + "/api/launcher/stop", {
@@ -82,7 +84,9 @@ try {
     "data-visible-waiting",
     "50",
   );
-  await expect(preview.getByText(/Adaptive waiting crowd/)).toBeVisible();
+  await expect(
+    preview.getByRole("heading", { name: "Bảng điều hành Chapel of Hope" }),
+  ).toBeVisible();
   const report = {
     result: "passed",
     version: health.version,
@@ -98,7 +102,7 @@ try {
       "Node Linux production bundle and browser checked; Windows BAT/PowerShell execution remains unverified.",
   };
   await writeFile(
-    "docs/screenshots/live-v17/package-check.json",
+    "docs/screenshots/live-v19/package-check.json",
     JSON.stringify(report, null, 2),
   );
   console.log(report);

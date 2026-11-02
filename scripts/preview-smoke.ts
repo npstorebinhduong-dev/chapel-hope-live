@@ -86,33 +86,50 @@ try {
       return alpha;
     });
   expect(ink).toBeGreaterThan(1000);
+  const settingsTab = () =>
+    page.getByRole("tab", { name: "Kiểm thử & Cài đặt", exact: true }).click();
   const reset = async () => {
+    await settingsTab();
     page.once("dialog", (dialog) => dialog.accept());
-    await page
-      .getByRole("button", { name: "Reset session", exact: false })
-      .click();
-    await expect(page.getByTestId("viewer-count")).toHaveText("0");
+    await page.getByRole("button", { name: "Xóa phiên", exact: false }).click();
+    await expect(page.getByTestId("stage-canvas")).toHaveAttribute(
+      "data-waiting",
+      "0",
+    );
   };
   await reset();
-  await page.getByRole("button", { name: "Send AMEN" }).click();
-  await page.getByRole("button", { name: "Send AMEN" }).click();
-  await expect(page.getByTestId("viewer-count")).toHaveText("1");
+  await page.getByRole("button", { name: "Gửi AMEN" }).click();
+  await page.getByRole("button", { name: "Gửi AMEN" }).click();
+  await expect(page.getByTestId("stage-canvas")).toHaveAttribute(
+    "data-waiting",
+    "1",
+  );
   for (const [count, total] of [
     [20, 21],
     [50, 71],
     [100, 171],
   ]) {
     await page
-      .getByRole("button", { name: `+ ${count} visitors`, exact: true })
+      .getByRole("button", { name: `Thêm người chờ ${count}`, exact: true })
       .click();
-    await expect(page.getByTestId("viewer-count")).toHaveText(String(total));
+    await expect(page.getByTestId("stage-canvas")).toHaveAttribute(
+      "data-waiting",
+      String(total),
+    );
   }
-  for (const key of giftKeys) await page.getByTestId(key).click();
+  await page
+    .getByRole("tab", { name: "Quà tặng & Hiệu ứng", exact: true })
+    .click();
+  for (const key of giftKeys) {
+    await page.getByTestId(key).click();
+    await page.waitForTimeout(120);
+  }
+  await page.getByRole("tab", { name: "Tổng quan", exact: true }).click();
   const observed = new Set<string>();
   const deadline = Date.now() + 240000;
   const played = page
     .locator("dl > div")
-    .filter({ has: page.getByText("Played", { exact: true }) })
+    .filter({ has: page.getByText("Quà đã diễn", { exact: true }) })
     .locator("dd");
   while (Date.now() < deadline) {
     const gift = await page
@@ -136,12 +153,13 @@ try {
     "data-zoom",
     "1.0000",
   );
-  await page.getByLabel("Rendering quality").selectOption("low");
+  await settingsTab();
+  await page.getByLabel("Chất lượng hình ảnh").selectOption("low");
   await expect(page.getByTestId("stage-canvas")).toHaveAttribute(
     "data-quality",
     "low",
   );
-  await page.getByLabel("Rendering quality").selectOption("balanced");
+  await page.getByLabel("Chất lượng hình ảnh").selectOption("balanced");
   await reset();
   await page.reload();
   await expect(page.getByTestId("viewer-count")).toHaveText("50");

@@ -1,3 +1,4 @@
+import type { EngagementEvent } from "../../../packages/shared/src/engagement.ts";
 import { createHash } from "node:crypto";
 import { WebSocket } from "ws";
 import { GIFTS, type CommentEvent, type GiftEvent } from "@chapel/shared";
@@ -24,8 +25,12 @@ export class TikFinityEventAdapter {
   private generation = 0;
   private alive = true;
   private seen = new Map<string, number>();
+  private likeTotals = new Map<string, number>();
+  private socialRecent = new Map<string, number>();
   constructor(
-    private receive: (e: CommentEvent | GiftEvent) => { status: string },
+    private receive: (e: CommentEvent | GiftEvent | EngagementEvent) => {
+      status: string;
+    },
     private changed: () => void = () => {},
     private retryBase = 1000,
   ) {}
@@ -123,6 +128,8 @@ export class TikFinityEventAdapter {
   }
   clearSession() {
     this.seen.clear();
+    this.likeTotals.clear();
+    this.socialRecent.clear();
     this.status = {
       ...defaultSource(),
       mode: this.status.mode,
@@ -134,6 +141,120 @@ export class TikFinityEventAdapter {
   private log(event: string, at = Date.now()) {
     this.status.log.push({ at, event });
     this.status.log = this.status.log.slice(-40);
+  }
+  private likeEpoch = 0;
+  private social(
+    kind: "like" | "share" | "follow",
+    d: any,
+    wrapperId: unknown,
+    now: number,
+    ignore: (reason: string) => void,
+  ) {
+    const rawUser = scalar(
+      d.userId ?? d.user?.userId ?? d.uniqueId ?? d.user?.uniqueId,
+    );
+    const tx = scalar(
+      d.msgId ?? d.msg_id ?? d.eventId ?? wrapperId ?? d.createTime,
+    );
+    const total = d.totalLikeCount ?? d.totalLikes;
+    const batch = d.likeCount ?? d.count;
+    if (rawUser.length > 200 || tx.length > 200)
+      return ignore("Invalid engagement identity");
+    const transactionKey = tx
+      ? `social-tx:${kind}:${hash(rawUser + ":" + tx)}`
+      : "";
+    if (transactionKey && this.seen.has(transactionKey)) {
+      this.status.duplicates++;
+      return ignore("SOCIAL DUPLICATE");
+    }
+    let count = 1,
+      identity = tx;
+    if (kind === "like") {
+      if (total !== undefined) {
+        if (!Number.isSafeInteger(total) || total < 0) {
+          this.status.unverifiedLikes++;
+          return ignore("LIKE COUNT UNVERIFIED");
+        }
+        const scope = "room"; // totalLikeCount is the room cumulative counter, not viewer count.
+        const previous = this.likeTotals.get(scope);
+        this.likeTotals.set(scope, total);
+        if (previous === undefined) return ignore("LIKE BASELINE RECORDED");
+        if (total < previous) {
+          this.likeEpoch++;
+          this.status.unverifiedLikes++;
+          return ignore("LIKE COUNTER RESET");
+        }
+        count = total - previous;
+        identity = `total:${this.likeEpoch}:${total}`;
+        if (count === 0) {
+          this.status.duplicates++;
+          return ignore("LIKE DUPLICATE");
+        }
+      } else {
+        if (!Number.isSafeInteger(batch) || batch < 1 || !tx) {
+          this.status.unverifiedLikes++;
+          return ignore("LIKE COUNT UNVERIFIED");
+        }
+        count = batch;
+      }
+      if (count > 10000) {
+        this.status.unverifiedLikes++;
+        return ignore("LIKE JUMP UNVERIFIED");
+      }
+    } else {
+      if (!rawUser) {
+        this.status.unverifiedShares++;
+        return ignore("SHARE/FOLLOW ID UNVERIFIED");
+      }
+      if (!identity) {
+        const key = kind + ":" + hash(rawUser),
+          last = this.socialRecent.get(key);
+        if (last !== undefined && now - last < 10000) {
+          this.status.duplicates++;
+          return ignore("SOCIAL DUPLICATE WINDOW");
+        }
+        this.socialRecent.set(key, now);
+        while (this.socialRecent.size > 2048)
+          this.socialRecent.delete(this.socialRecent.keys().next().value!);
+        identity = `window:${now}`;
+      }
+      if (
+        d.count !== undefined &&
+        (!Number.isSafeInteger(d.count) || d.count !== 1)
+      )
+        return ignore("SOCIAL COUNT UNVERIFIED");
+    }
+    const eventId =
+      `tf-${kind}-` +
+      hash(
+        `${kind === "like" && total !== undefined ? "room" : rawUser}:${identity}`,
+      );
+    for (const [id, t] of this.seen) if (now - t > 600000) this.seen.delete(id);
+    if (this.seen.has(eventId)) {
+      this.status.duplicates++;
+      return ignore("SOCIAL DUPLICATE");
+    }
+    const result = this.receive({
+      type: kind,
+      eventId,
+      userId: rawUser ? "tf-" + hash(rawUser) : "",
+      username: safeDisplayName(d.nickname ?? d.user?.nickname ?? ""),
+      source: "tikfinity",
+      count,
+      timestamp: now,
+    });
+    if (result.status === "accepted") {
+      if (transactionKey) this.seen.set(transactionKey, now);
+      this.seen.set(eventId, now);
+      while (this.seen.size > 4096)
+        this.seen.delete(this.seen.keys().next().value!);
+      if (kind === "like") this.status.likeReceived = true;
+      if (kind === "share") this.status.shareReceived = true;
+      if (kind === "follow") this.status.followReceived = true;
+    }
+    this.status.lastEvent = `${kind} +${count} · ${result.status}`;
+    this.log(this.status.lastEvent, now);
+    this.changed();
   }
   ingest(raw: string, now = Date.now()) {
     if (this.status.mode !== "tikfinity") return;
@@ -154,11 +275,16 @@ export class TikFinityEventAdapter {
     }
     if (
       !m ||
-      !["chat", "gift"].includes(m.event) ||
+      !["chat", "gift", "like", "share", "follow"].includes(
+        String(m.event).toLowerCase(),
+      ) ||
       !m.data ||
       typeof m.data !== "object"
     )
       return ignore("Unsupported event");
+    m.event = String(m.event).toLowerCase();
+    if (["like", "share", "follow"].includes(m.event))
+      return this.social(m.event, m.data, m.id, now, ignore);
     const d = m.data,
       rawUser = scalar(
         d.userId || d.user?.userId || d.uniqueId || d.user?.uniqueId,

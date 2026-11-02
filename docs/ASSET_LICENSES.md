@@ -2,11 +2,11 @@
 
 Ba PNG mới trong `apps/client/public/art/` được tạo riêng trong phiên phát triển ngày 02/11/2026 bằng công cụ sinh ảnh, theo yêu cầu người dùng:
 
-| File | Kích thước | Nội dung / tham chiếu |
-|---|---|---|
-| `chapel-stage.png` | 941×1672 | Thánh đường hư cấu, tham chiếu bố cục ảnh chụp chính renderer v1.2 của dự án; không dùng ảnh nhà thờ ngoài |
+| File               | Kích thước     | Nội dung / tham chiếu                                                                                         |
+| ------------------ | -------------- | ------------------------------------------------------------------------------------------------------------- |
+| `chapel-stage.png` | 941×1672       | Thánh đường hư cấu, tham chiếu bố cục ảnh chụp chính renderer v1.2 của dự án; không dùng ảnh nhà thờ ngoài    |
 | `people-atlas.png` | 1402×1122 RGBA | Bốn nhân vật nam/nữ hư cấu và một linh mục hư cấu, đứng/ngồi/quỳ/đi/đọc sách; không dùng chân dung người thật |
-| `walk-atlas.png` | 1774×887 RGBA | Dải tám hình bước đi của từng nhân vật gốc, tham chiếu atlas trên |
+| `walk-atlas.png`   | 1774×887 RGBA  | Dải tám hình bước đi của từng nhân vật gốc, tham chiếu atlas trên                                             |
 
 Đây là artwork tạo riêng cho dự án, **không phải model mua/tải từ thư viện bên thứ ba**, không tự gán CC0 hoặc khẳng định độc quyền bản quyền. Quyền sử dụng đầu ra chịu điều khoản dịch vụ sinh ảnh và quyền áp dụng cho dự án; giấy phép thư viện Three.js không được dùng thay cho giấy phép artwork. Không có tải asset/CDN lúc chạy. Hash và nguồn được ghi trong `public/art/manifest.json`.
 
@@ -49,7 +49,19 @@ Repository không có bộ GLB nam/nữ chất lượng cao, skinning và các c
 
 Giữ nguyên các atlas/plate 2,5D đã khai báo. Các vật dâng, chuyển động cánh hoa, light shafts và glow bổ sung được vẽ bằng code Canvas trong dự án. Nhạc/SFX/choir là synthesis nguyên tác; không tải bản thu thương mại hoặc giọng giáo sĩ. Xem `docs/AUDIO_VOICES_AND_LICENSES.md` về Browser Speech và điều kiện của clip operator cung cấp.
 
-
 ## v1.7 — bồ câu và ánh sáng idle
 
 `apps/client/src/scene/stageAtmosphere.ts` vẽ bồ câu vector, cánh và ánh sáng bằng công thức nguyên tác trong dự án. Không tải model, hình hoặc recording bên thứ ba. Giữ nguyên nguồn/giấy phép các atlas hiện có.
+
+## Bổ sung v1.9
+
+`audio/MusicDirector.ts`: ba bản nhạc organ/piano tổng hợp nguyên tác (Bình an,
+Hy vọng, Chiều tĩnh lặng), tám hợp âm/32 nốt mỗi bản; không lấy sample hoặc melody
+của bản thu bên ngoài. `audio/runtime.ts`: reverb, room tone, piano/organ/chuông,
+gió cánh chim và cue vật thể tổng hợp bằng WebAudio. Đây không phải bản thu
+nhà thờ hoặc hợp xướng người thật. Icon hướng dẫn SVG và bồ câu Canvas là mã vẽ
+của dự án. Text lời chúc/cảm ơn/CTA EN–VI–IT được viết cho dự án, không hứa phép màu.
+
+Không đóng gói giọng TTS/bản thu thương mại. Giọng do hệ điều hành/trình duyệt
+cung cấp có điều kiện sử dụng riêng; operator phải đối chiếu quyền phát của
+voice chọn trên máy. Bản thu tùy chọn phải có quyền phát LIVE của người cung cấp.

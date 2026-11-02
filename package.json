@@ -1,7 +1,7 @@
 {
   "name": "chapel-hope-live",
   "private": true,
-  "version": "1.7.0",
+  "version": "1.9.0",
   "workspaces": [
     "apps/*",
     "packages/*"
@@ -14,17 +14,19 @@
     "build": "npm run typecheck && npm run build -w @chapel/client && npm run build -w @chapel/server",
     "typecheck": "tsc --noEmit",
     "test": "tsx --test tests/*.test.ts",
-    "test:browser": "node --import tsx scripts/queue-browser.ts",
+    "test:browser": "node --import tsx scripts/production-v19.ts",
     "start": "npm run start -w @chapel/server",
-    "test:visual": "node --import tsx scripts/queue-browser.ts",
+    "test:visual": "node --import tsx scripts/production-v19.ts",
     "build:preview": "node scripts/build-preview.mjs",
     "test:preview": "node --import tsx scripts/preview-smoke.ts",
     "build:windows": "npm run build && node scripts/build-windows.mjs",
-    "test:production": "node --import tsx scripts/production-browser.ts",
-    "test:soak": "node --import tsx scripts/soak-v16.ts",
+    "test:production": "node --import tsx scripts/production-v19.ts",
+    "test:soak": "node --import tsx scripts/soak-v19.ts",
     "package:windows": "npm run build:windows && python3 scripts/package-windows.py",
-    "test:living": "node --import tsx scripts/living-browser.ts",
-    "test:recorded": "node --import tsx scripts/recorded-browser.ts"
+    "test:living": "node --import tsx scripts/production-v19.ts",
+    "test:recorded": "node --import tsx scripts/recorded-browser.ts",
+    "test:package": "node --import tsx scripts/package-smoke.ts",
+    "test:performance": "node --import tsx scripts/performance-v19.ts"
   },
   "devDependencies": {
     "@playwright/test": "^1.56.0",

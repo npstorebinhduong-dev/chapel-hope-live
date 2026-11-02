@@ -1,3 +1,4 @@
+import { CommunityEngine, type EngagementEvent } from "./engagement.ts";
 import { randomUUID } from "node:crypto";
 import {
   GIFTS,
@@ -23,7 +24,41 @@ import {
 
 /** One authoritative state owner. Comments cannot allocate seats or dispatch journeys. */
 export class ChapelEngine {
+  community = new CommunityEngine();
+  engagementReady = false;
+  speechBusy = false;
+  engage(event: EngagementEvent, now = event.timestamp) {
+    return this.community.accept(event, now);
+  }
   attendees = new Map<string, Attendee>();
+  // Beyond the detailed-avatar budget, retain only identity/appearance/TTL.
+  // This preserves waiting counts and gift eligibility without path/pose allocation.
+  private waitingOverflow = new Map<
+    string,
+    Pick<
+      Attendee,
+      "userId" | "username" | "gender" | "variant" | "joinedAt" | "lastSeen"
+    >
+  >();
+  capacityRefusals = 0;
+  private trimDetails() {
+    const cap = this.community.settings.memoryLimit;
+    if (this.attendees.size <= cap) return;
+    for (const [id, a] of [...this.attendees].reverse()) {
+      if (this.attendees.size <= cap) break;
+      if (a.admission !== "waiting" || a.journey) continue;
+      this.waitingOverflow.set(id, {
+        userId: id,
+        username: a.username,
+        gender: a.gender,
+        variant: a.variant,
+        joinedAt: a.joinedAt,
+        lastSeen: a.lastSeen,
+      });
+      this.attendees.delete(id);
+      this.compactAt = 0;
+    }
+  }
   queue: GiftEvent[] = [];
   active: Snapshot["active"] = null;
   settings = { npcs: true, muted: true, camera: true };
@@ -85,6 +120,7 @@ export class ChapelEngine {
     username: string,
     now: number,
     temporary = false,
+    admitting = false,
   ): Attendee | null {
     const existing = this.attendees.get(userId);
     if (existing) {
@@ -134,19 +170,54 @@ export class ChapelEngine {
       }
       return existing;
     }
+    const overflow = this.waitingOverflow.get(userId);
+    if (
+      !admitting &&
+      (overflow || this.attendees.size >= this.community.settings.memoryLimit)
+    ) {
+      // Absolute emergency ceiling is explicit, never presented as an admitted viewer.
+      if (!overflow && this.waitingOverflow.size >= 80000) {
+        this.capacityRefusals++;
+        return null;
+      }
+      const variant = overflow?.variant ?? this.revision++ % 12;
+      const brief = {
+        userId,
+        username,
+        gender:
+          overflow?.gender ??
+          this.preferences.get(userId)?.gender ??
+          ((variant % 2 ? "female" : "male") as AvatarGender),
+        variant,
+        joinedAt: overflow?.joinedAt ?? now,
+        lastSeen: now,
+      };
+      this.waitingOverflow.set(userId, brief);
+      return {
+        ...brief,
+        seat: null,
+        overflow: null,
+        walkAt: now,
+        admission: "waiting",
+        waitingSlot: this.attendees.size + this.waitingOverflow.size - 1,
+      };
+    }
+    if (overflow) this.waitingOverflow.delete(userId);
     const slots = [...this.attendees.values()]
       .filter((a) => a.waitingSlot != null)
       .map((a) => a.waitingSlot!);
     // Default appearance depends only on join order; never infer real gender from a name/id.
-    const variant = this.revision++ % 12;
+    const variant = overflow?.variant ?? this.revision++ % 12;
     const gender =
-      this.preferences.get(userId)?.gender ?? (variant % 2 ? "female" : "male");
+      overflow?.gender ??
+      this.preferences.get(userId)?.gender ??
+      (variant % 2 ? "female" : "male");
     const a: Attendee = {
       userId,
       username,
       seat: null,
       overflow: null,
-      joinedAt: now,
+      joinedAt: overflow?.joinedAt ?? now,
       lastSeen: now,
       walkAt: now,
       variant,
@@ -211,12 +282,23 @@ export class ChapelEngine {
       return { status: "duplicate" as const };
     this.remember(event.eventId, now);
     const kind = parseComment(event.text);
+    this.community.record("comment", now);
     if (kind === "other") return { status: "ignored" as const };
     if (kind !== "amen") {
       this.preferences.delete(event.userId);
       this.preferences.set(event.userId, { gender: kind, at: now });
       while (this.preferences.size > LIMITS.preferences)
         this.preferences.delete(this.preferences.keys().next().value!);
+      const compact = this.waitingOverflow.get(event.userId);
+      if (compact) {
+        compact.gender = kind;
+        compact.variant =
+          Math.floor(compact.variant / 4) * 4 +
+          (compact.variant % 4 >= 2 ? 2 : 0) +
+          (kind === "female" ? 1 : 0);
+        compact.lastSeen = now;
+        compact.username = event.username;
+      }
       const a = this.attendees.get(event.userId);
       if (a) {
         a.lastSeen = now;
@@ -228,6 +310,7 @@ export class ChapelEngine {
     }
     const a = this.join(event.userId, event.username, now);
     if (!a) return { status: "capacity" as const };
+    this.community.record("amen", now);
     this.toast = {
       text: `${event.username} · ${a.admission === "waiting" ? "joined the waiting line" : "AMEN received"}`,
       until: now + 3000,
@@ -245,13 +328,14 @@ export class ChapelEngine {
     }
     this.remember(event.eventId, now);
     const normalized = { ...event, coinValue: GIFTS[event.giftKey].coins };
-    const a = this.join(event.userId, event.username, now);
+    const a = this.join(event.userId, event.username, now, false, true);
     if (a?.admission === "waiting") {
       a.admission = "invited";
       this.allocate(a);
     }
     this.queue.push(normalized);
     this.accepted++;
+    this.community.record("gift", now, event.giftKey);
     const prior = this.supporters.get(event.userId);
     this.supporters.delete(event.userId);
     this.supporters.set(event.userId, {
@@ -277,7 +361,7 @@ export class ChapelEngine {
     } else this.priorityStreak = 0;
     const [event] = this.queue.splice(index, 1);
     let a = this.attendees.get(event.userId);
-    if (!a) a = this.join(event.userId, event.username, now, false)!;
+    if (!a) a = this.join(event.userId, event.username, now, false, true)!;
     if (!a) {
       this.queue.unshift(event);
       return;
@@ -332,7 +416,16 @@ export class ChapelEngine {
     };
   }
   tick(now = Date.now()) {
+    this.trimDetails();
+    for (const [id, a] of this.waitingOverflow)
+      if (now - a.lastSeen >= LIMITS.ttl) this.waitingOverflow.delete(id);
     this.prune(now);
+    this.community.tick(
+      now,
+      !!this.active || this.queue.length > 0,
+      this.engagementReady && !this.settings.muted,
+      this.speechBusy,
+    );
     if (now >= this.compactAt) this.compact(now);
     if (this.active) {
       const a = this.attendees.get(this.active.event.userId);
@@ -458,7 +551,12 @@ export class ChapelEngine {
       this.settings[action] = enabled!;
       return;
     }
+    const communitySettings = this.community.settings;
+    this.community = new CommunityEngine();
+    this.community.setSettings(communitySettings);
     this.attendees.clear();
+    this.waitingOverflow.clear();
+    this.capacityRefusals = 0;
     this.queue = [];
     this.active = null;
     this.seen.clear();
@@ -481,8 +579,23 @@ export class ChapelEngine {
     const attendees = [...this.attendees.values()];
     return {
       now,
+      community: this.community.snapshot(now),
+      totalAttendees: attendees.length + this.waitingOverflow.size,
+      compactWaiting: this.waitingOverflow.size,
+      capacityRefusals: this.capacityRefusals,
+      hiddenWaiting:
+        this.waitingOverflow.size +
+        attendees.filter(
+          (a) =>
+            a.waitingSlot != null &&
+            a.waitingSlot >= this.community.settings.renderLimit,
+        ).length,
       revision: this.revision,
-      attendees,
+      attendees: attendees.filter(
+        (a) =>
+          a.waitingSlot == null ||
+          a.waitingSlot < this.community.settings.renderLimit,
+      ),
       active: this.active,
       queueLength: this.queue.length,
       accepted: this.accepted,
@@ -495,7 +608,9 @@ export class ChapelEngine {
       supporters: [...this.supporters.values()]
         .sort((a, b) => b.coins - a.coins)
         .slice(0, 3),
-      waitingCount: attendees.filter((a) => a.admission === "waiting").length,
+      waitingCount:
+        this.waitingOverflow.size +
+        attendees.filter((a) => a.admission === "waiting").length,
       enteringCount: attendees.filter((a) => a.admission === "invited").length,
       insideCount: attendees.filter((a) => a.admission === "inside").length,
       seatedCount: attendees.filter(
@@ -505,10 +620,13 @@ export class ChapelEngine {
       giftProcessed: this.completed,
       ignoredDuplicates: this.ignoredDuplicates,
       avatarVariantByUser: Object.fromEntries(
-        attendees.map((a) => [
-          a.userId,
-          { gender: a.gender!, variant: a.variant },
-        ]),
+        attendees
+          .filter(
+            (a) =>
+              a.waitingSlot == null ||
+              a.waitingSlot < this.community.settings.renderLimit,
+          )
+          .map((a) => [a.userId, { gender: a.gender!, variant: a.variant }]),
       ),
     };
   }

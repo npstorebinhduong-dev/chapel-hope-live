@@ -15,7 +15,7 @@ await writeFile(
   JSON.stringify(
     {
       product: "Chapel of Hope LIVE",
-      version: "1.7.0",
+      version: "1.9.0",
       nodeMinimum: "22.12.0",
       entry: "server.cjs",
       client: "../apps/client/dist",

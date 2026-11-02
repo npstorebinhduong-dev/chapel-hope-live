@@ -8,8 +8,8 @@ const zoomByGift: Record<GiftKey, number> = {
   prayer_5: 0.1,
   rose_5: 0.075,
   bell_10: 0.095,
-  altar_100: 0.24,
-  ceremony_500: 0.28,
+  altar_100: 0.16,
+  ceremony_500: 0.18,
 };
 export type StageCamera = { zoom: number; x: number; y: number; focus: string };
 export const overviewCamera = (): StageCamera => ({
@@ -51,7 +51,7 @@ export function smoothCamera(
   target: StageCamera,
   dt: number,
 ): StageCamera {
-  const blend = 1 - Math.exp(-Math.min(0.08, Math.max(0, dt)) * 5);
+  const blend = 1 - Math.exp(-Math.min(2, Math.max(0, dt)) * 5);
   const mix = (a: number, b: number) =>
     Math.abs(a - b) < 0.00002 ? b : a + (b - a) * blend;
   return {

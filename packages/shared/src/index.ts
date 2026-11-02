@@ -169,7 +169,19 @@ export interface ActiveGift {
   returnEndsAt?: number;
   effectApplied?: boolean;
 }
+export interface AudioCommand {
+  id: string;
+  at: number;
+  action: "stopVoice" | "resumeVoice" | "testAll" | "stopAll" | "sample";
+  locale?: "en" | "vi" | "it";
+}
 export interface Snapshot {
+  audioCommand?: AudioCommand | null;
+  community?: import("./engagement.ts").CommunitySnapshot;
+  totalAttendees?: number;
+  compactWaiting?: number;
+  capacityRefusals?: number;
+  hiddenWaiting?: number;
   production?: import("./production.ts").ProductionSettings;
   source?: import("./production.ts").SourceStatus;
   now: number;

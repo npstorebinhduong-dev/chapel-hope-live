@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { engagementSettingsSchema } from "./engagement.ts";
 import { giftKeys } from "./index.ts";
 export const locales = ["en", "vi", "it"] as const;
 export type Locale = (typeof locales)[number];
@@ -11,6 +12,31 @@ export const mixSchema = z.object({
 });
 export const productionSchema = z.object({
   locale: z.enum(locales),
+  thanksEnabled: z.boolean().default(true),
+  musicEnabled: z.boolean().default(true),
+  musicTrack: z
+    .enum(["playlist", "peace", "hope", "evening"])
+    .default("playlist"),
+  engagement: engagementSettingsSchema.default(() =>
+    engagementSettingsSchema.parse({}),
+  ),
+  guide: z
+    .object({
+      enabled: z.boolean().default(true),
+      opacity: z.number().min(0.6).max(1).default(0.92),
+      scale: z.number().min(0.85).max(1.1).default(1),
+      position: z.enum(["upper", "compact"]).default("upper"),
+      cycle: z.number().min(8).max(12).default(10),
+      preview: z.enum(["auto", "join", "social", "gifts"]).default("auto"),
+    })
+    .default(() => ({
+      enabled: true,
+      opacity: 0.92,
+      scale: 1,
+      position: "upper" as const,
+      cycle: 10,
+      preview: "auto" as const,
+    })),
   rate: z.number().min(0.85).max(1.1),
   voiceEnabled: z.boolean(),
   bannerEnabled: z.boolean(),
@@ -24,16 +50,17 @@ export const productionSchema = z.object({
   mix: mixSchema,
 });
 export type ProductionSettings = z.infer<typeof productionSchema>;
-export const defaultProduction = (): ProductionSettings => ({
-  locale: "en",
-  rate: 0.95,
-  voiceEnabled: true,
-  bannerEnabled: true,
-  readNames: false,
-  voiceURI: { en: "", vi: "", it: "" },
-  provider: "browser",
-  mix: { master: 1, music: 0.22, ambient: 0.14, sfx: 0.45, voice: 0.85 },
-});
+export const defaultProduction = (): ProductionSettings =>
+  productionSchema.parse({
+    locale: "en",
+    rate: 0.95,
+    voiceEnabled: true,
+    bannerEnabled: true,
+    readNames: false,
+    voiceURI: { en: "", vi: "", it: "" },
+    provider: "browser",
+    mix: { master: 1, music: 0.22, ambient: 0.14, sfx: 0.45, voice: 0.85 },
+  });
 export const mappingSchema = z
   .record(z.string().regex(/^\d{1,20}$/), z.enum(giftKeys))
   .refine((m) => Object.keys(m).length <= 100, "Maximum 100 gift mappings");
@@ -61,6 +88,11 @@ export const sourceConfigSchema = z.object({
 });
 export type SourceConfig = z.infer<typeof sourceConfigSchema>;
 export interface SourceStatus {
+  likeReceived: boolean;
+  shareReceived: boolean;
+  followReceived: boolean;
+  unverifiedLikes: number;
+  unverifiedShares: number;
   observed: { giftId: string; name: string; coins: number | null }[];
   log: { at: number; event: string }[];
   mode: "mock" | "tikfinity";
@@ -78,6 +110,11 @@ export interface SourceStatus {
   unknown: { giftId: string; name: string; coins: number | null }[];
 }
 export const defaultSource = (): SourceStatus => ({
+  likeReceived: false,
+  shareReceived: false,
+  followReceived: false,
+  unverifiedLikes: 0,
+  unverifiedShares: 0,
   observed: [],
   log: [],
   mode: "mock",

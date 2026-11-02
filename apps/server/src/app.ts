@@ -1,3 +1,4 @@
+import { engagementEventSchema } from "../../../packages/shared/src/engagement.ts";
 import express from "express";
 import { createServer } from "node:http";
 import { randomUUID } from "node:crypto";
@@ -33,13 +34,21 @@ export function createChapelServer(
   const engine = new ChapelEngine();
   const config = operatorConfig(options.configFile);
   let production = config.production;
+  engine.community.setSettings(production.engagement);
   const adapter = new TikFinityEventAdapter(
-    (e) => (e.type === "comment" ? engine.comment(e) : engine.gift(e)),
+    (e) =>
+      e.type === "comment"
+        ? engine.comment(e)
+        : e.type === "gift"
+          ? engine.gift(e)
+          : engine.engage(e),
     () => {},
     options.retryBase,
   );
   adapter.configure(config.source);
+  let audioCommand: import("@chapel/shared").AudioCommand | null = null;
   const snapshot = () => ({
+    audioCommand,
     ...engine.snapshot(),
     production,
     source: adapter.status,
@@ -90,6 +99,7 @@ export function createChapelServer(
       audio: boolean;
       voice: boolean;
       voiceStatus: string;
+      audioLevels: Record<string, number>;
     }
   >();
   const wss = new WebSocketServer({ noServer: true, maxPayload: 1024 });
@@ -119,6 +129,14 @@ export function createChapelServer(
     }
   };
   const broadcast = () => {
+    const reports = [...metrics.values()].filter(
+      (m) => m.canvas && Date.now() - m.at < 5000,
+    );
+    engine.engagementReady =
+      reports.some((m) => m.audio) &&
+      (adapter.status.mode === "mock" ||
+        adapter.status.connection === "connected");
+    engine.speechBusy = reports.some((m) => m.voiceStatus === "speaking");
     const message = {
       type: "snapshot",
       snapshot: snapshot(),
@@ -154,6 +172,14 @@ export function createChapelServer(
             audio: data.audio === true,
             voice: data.voice === true,
             voiceStatus: String(data.voiceStatus ?? "unknown").slice(0, 32),
+            audioLevels: Object.fromEntries(
+              ["master", "music", "ambient", "sfx"].map((k) => [
+                k,
+                Number.isFinite(data.audioLevels?.[k])
+                  ? Math.min(1, Math.max(0, data.audioLevels[k]))
+                  : 0,
+              ]),
+            ),
           });
       } catch {
         /* Ignore malformed telemetry. */
@@ -167,9 +193,9 @@ export function createChapelServer(
       ok: true,
       mode: adapter.status.mode,
       product: "chapel-hope-live",
-      version: "1.7.0",
+      version: "1.9.0",
       source: adapter.status.connection,
-      viewers: engine.attendees.size,
+      viewers: engine.snapshot().totalAttendees,
       queue: engine.queue.length,
     }),
   );
@@ -202,6 +228,7 @@ export function createChapelServer(
     }
     config.save(parsed.data, adapter.status);
     production = parsed.data;
+    engine.community.setSettings(production.engagement);
     broadcast();
     res.json({ ok: true });
   });
@@ -213,7 +240,10 @@ export function createChapelServer(
     }
     if (
       parsed.data.mode !== adapter.status.mode &&
-      engine.attendees.size &&
+      (engine.attendees.size ||
+        engine.community.hearts ||
+        engine.community.shares ||
+        engine.community.follows) &&
       req.body.reset !== true
     ) {
       res.status(409).json({ error: "Confirm reset before changing source" });
@@ -280,6 +310,67 @@ export function createChapelServer(
       eventId: event.eventId,
       ...(result.status === "queue_full" ? { retryAfterMs: 2000 } : {}),
     });
+  });
+  app.post("/mock/engagement", (req, res) => {
+    const parsed = engagementEventSchema.safeParse({
+      ...req.body,
+      eventId: req.body.eventId ?? randomUUID(),
+      timestamp: Date.now(),
+      source: "mock",
+    });
+    if (!parsed.success) {
+      res.status(400).json({ error: "invalid_engagement" });
+      return;
+    }
+    const result = engine.engage(parsed.data);
+    broadcast();
+    res.json(result);
+  });
+  app.post("/mock/inactivity", (req, res) => {
+    const seconds = Number(req.body.seconds);
+    if (![60, 120].includes(seconds)) {
+      res.status(400).json({ error: "invalid_inactivity" });
+      return;
+    }
+    engine.community.lastActivity = Date.now() - seconds * 1000;
+    engine.community.lastShare = Math.min(
+      engine.community.lastShare,
+      engine.community.lastActivity,
+    );
+    broadcast();
+    res.json({ status: "accepted" });
+  });
+  app.post("/audio/command", (req, res) => {
+    const parsed = z
+      .object({
+        action: z.enum([
+          "stopVoice",
+          "resumeVoice",
+          "testAll",
+          "stopAll",
+          "sample",
+        ]),
+        locale: z.enum(["en", "vi", "it"]).optional(),
+      })
+      .safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: "invalid_audio_command" });
+      return;
+    }
+    audioCommand = { ...parsed.data, id: randomUUID(), at: Date.now() };
+    broadcast();
+    res.json({ status: "accepted" });
+  });
+  app.post("/engagement/invite", (_req, res) => {
+    engine.community.tick(
+      Date.now(),
+      !!engine.active || engine.queue.length > 0,
+      engine.engagementReady && !engine.settings.muted,
+      engine.speechBusy,
+      true,
+    );
+    broadcast();
+    res.json({ status: "accepted" });
   });
   app.post("/mock/spam-amen", (req, res) => {
     const input = z

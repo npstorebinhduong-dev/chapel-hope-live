@@ -1,0 +1,37 @@
+{
+  "result": "passed",
+  "samples": [
+    {
+      "target": 100,
+      "framesPerSecond": 44.147023571713945,
+      "nodeHeap": 77504208,
+      "browserHeap": 10262163,
+      "rendered": 100,
+      "compact": 0,
+      "hidden": 0,
+      "waiting": 100
+    },
+    {
+      "target": 1000,
+      "framesPerSecond": 28.861464968152866,
+      "nodeHeap": 60987304,
+      "browserHeap": 12014635,
+      "rendered": 1000,
+      "compact": 0,
+      "hidden": 0,
+      "waiting": 1000
+    },
+    {
+      "target": 1500,
+      "framesPerSecond": 45.34558529764283,
+      "nodeHeap": 78268808,
+      "browserHeap": 15026307,
+      "rendered": 200,
+      "compact": 500,
+      "hidden": 1300,
+      "waiting": 1500
+    }
+  ],
+  "errors": [],
+  "note": "Linux headless Chromium, balanced Canvas2D. Five-second windows, not Windows FPS promise. CTA source-ready flag supplied by the test; native speech absent."
+}

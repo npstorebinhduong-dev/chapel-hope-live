@@ -306,7 +306,8 @@ export function StageChapel() {
       raf = requestAnimationFrame(draw);
       const level = useQuality.getState().level;
       if (level === "low" && time - lastDraw < 31) return;
-      const dt = Math.min(0.08, (time - previousTime) / 1000);
+      const cameraDt = Math.max(0, (time - previousTime) / 1000);
+      const dt = Math.min(0.08, cameraDt);
       previousTime = time;
       lastDraw = time;
       resize();
@@ -350,17 +351,36 @@ export function StageChapel() {
           state?.settings.camera ?? true,
           donorPoint?.x,
         ),
-        dt,
+        cameraDt,
       );
       world.current!.style.transformOrigin = "0 0";
       world.current!.style.transform = `translate(${camera.x * 100}%, ${camera.y * 100}%) scale(${camera.zoom})`;
+      const reaction = !state?.active
+        ? (state?.community?.reaction ?? null)
+        : null;
+      const communityPrayer = reaction?.kind === "community";
       const birds = drawAtmosphere(
         ctx,
         width,
         height,
         (time - epoch) / 1000,
         level === "low",
+        state?.production?.engagement.idleEnabled ?? true,
+        reaction,
+        now,
       );
+      if (reaction?.kind === "heart" || communityPrayer) {
+        const progress = Math.max(
+          0,
+          Math.min(
+            1,
+            (now - reaction.startedAt) / (reaction.endsAt - reaction.startedAt),
+          ),
+        );
+        const strength = Math.sin(progress * Math.PI);
+        glow(0.5, 0.38, 0.24, "rgba(255,225,160,.38)", strength);
+        glow(0.175, 0.69, 0.09, "rgba(255,176,71,.32)", strength);
+      }
       if (donorPoint && selectedGift) {
         glow(
           donorPoint.x,
@@ -418,7 +438,7 @@ export function StageChapel() {
       }
       // Independent fictional officiant, never added to attendees or supporters.
       const nextPriest =
-        selectedGift === "ceremony_500"
+        selectedGift === "ceremony_500" || communityPrayer
           ? 2
           : selectedGift === "altar_100"
             ? 3
@@ -475,6 +495,7 @@ export function StageChapel() {
                   ] as Vec3,
                   state:
                     selectedGift === "ceremony_500" ||
+                    communityPrayer ||
                     (selectedGift === "bell_10" &&
                       a.seat! < 8 &&
                       elapsed > (a.seat! % 4) * 120)
@@ -998,6 +1019,10 @@ export function StageChapel() {
       element.dataset.cameraX = camera.x.toFixed(5);
       element.dataset.cameraY = camera.y.toFixed(5);
       element.dataset.birds = String(birds);
+      element.dataset.community = reaction?.kind ?? "";
+      element.dataset.heartMilestones = String(
+        state?.community?.heartMilestones ?? 0,
+      );
       element.dataset.atmosphere = ((time - epoch) / 1000).toFixed(2);
       element.dataset.candles = String(state?.candles ?? 0);
       element.dataset.roses = String(state?.roses ?? 0);

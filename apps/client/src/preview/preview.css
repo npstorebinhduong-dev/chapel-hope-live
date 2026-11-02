@@ -76,3 +76,12 @@
     gap: 8px;
   }
 }
+.preview-controls .admin-shell {
+  padding: 20px;
+}
+.preview-controls .admin-header > a {
+  display: none;
+}
+.preview-controls .admin-nav button {
+  min-width: 130px;
+}

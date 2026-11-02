@@ -29,7 +29,10 @@ export function operatorConfig(file?: string) {
       fs.writeFileSync(
         file + ".tmp",
         JSON.stringify(
-          { production: p, source: { ...s, mode: "mock" } },
+          {
+            production: p,
+            source: { ...sourceConfigSchema.parse(s), mode: "mock" },
+          },
           null,
           2,
         ),

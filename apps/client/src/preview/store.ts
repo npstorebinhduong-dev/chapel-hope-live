@@ -1,3 +1,4 @@
+import { engagementEventSchema } from "../../../../packages/shared/src/engagement";
 import { create } from "zustand";
 import { ChapelEngine } from "../../../../packages/shared/src/engine";
 import {
@@ -19,6 +20,7 @@ import {
   productionSchema,
 } from "../../../../packages/shared/src/production";
 let production = defaultProduction();
+let audioCommand: import("@chapel/shared").AudioCommand | null = null;
 // Only bundled by build-preview: the normal app continues using HTTP/WebSocket.
 const engine = new ChapelEngine();
 let timer: ReturnType<typeof setInterval> | undefined;
@@ -40,10 +42,22 @@ export const useSession = create<{
     set({ snapshot, fps, connected: true, receivedAt: performance.now() }),
 }));
 function publish() {
+  engine.community.setSettings(production.engagement);
+  const frame = document.querySelector<HTMLElement>(
+    '[data-testid="live-frame"]',
+  );
+  const audio = JSON.parse(frame?.dataset.audio ?? "{}");
+  engine.engagementReady = audio.running && !engine.settings.muted;
+  engine.speechBusy = frame?.dataset.voiceStatus === "speaking";
   useSession
     .getState()
     .set(
-      { ...engine.snapshot(), production, source: defaultSource() },
+      {
+        ...engine.snapshot(),
+        production,
+        audioCommand,
+        source: defaultSource(),
+      },
       useSession.getState().fps,
     );
 }
@@ -82,6 +96,15 @@ export async function post(
   data: unknown,
 ): Promise<{ status?: string; joined?: number }> {
   const timestamp = Date.now();
+  if (endpoint === "audio/command") {
+    audioCommand = {
+      ...(data as import("@chapel/shared").AudioCommand),
+      id: crypto.randomUUID(),
+      at: timestamp,
+    };
+    publish();
+    return { status: "accepted" };
+  }
   if (endpoint === "production") {
     production = productionSchema.parse(data);
     publish();
@@ -91,6 +114,36 @@ export async function post(
     throw new Error(
       "TikFinity requires the Windows production launcher; this HTML is Mock only.",
     );
+  if (endpoint === "mock/engagement") {
+    const parsed = engagementEventSchema.parse({
+      ...(data as object),
+      eventId: crypto.randomUUID(),
+      timestamp,
+      source: "mock",
+    });
+    const result = engine.engage(parsed);
+    publish();
+    return result;
+  }
+  if (endpoint === "mock/inactivity") {
+    const seconds = (data as { seconds: number }).seconds;
+    if (![60, 120].includes(seconds)) throw Error("invalid_inactivity");
+    engine.community.lastActivity = timestamp - seconds * 1000;
+    engine.community.lastShare = engine.community.lastActivity;
+    publish();
+    return { status: "accepted" };
+  }
+  if (endpoint === "engagement/invite") {
+    engine.community.tick(
+      timestamp,
+      !!engine.active || !!engine.queue.length,
+      engine.engagementReady,
+      engine.speechBusy,
+      true,
+    );
+    publish();
+    return { status: "accepted" };
+  }
   if (endpoint === "mock/acceptance") {
     const result = fillAcceptance(engine);
     publish();

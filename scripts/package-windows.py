@@ -11,14 +11,14 @@ for name in ['apps','packages','windows','scripts','tests']:
   if p.is_file() and not any(part in ('node_modules','.vite') for part in p.parts):files.append(p)
 for name in ['production','docs']:
  for p in (root/name).rglob('*'):
-  if p.is_file() and (name!='docs' or (('screenshots' not in p.parts or 'live-v17' in p.parts) and p.name not in ['ARCHIVE_README_V1_2.md'])):files.append(p)
+  if p.is_file() and (name!='docs' or (('screenshots' not in p.parts or 'live-v19' in p.parts) and p.name not in ['ARCHIVE_README_V1_2.md'])):files.append(p)
 for name in ['START_CHAPEL_LIVE.bat','STOP_CHAPEL_LIVE.bat','README.md','AGENTS.md','package.json','package-lock.json','tsconfig.json']:
  files.append(root/name)
 files=sorted(set(files));manifest={str(p.relative_to(root)).replace('\\','/'):hashlib.sha256(p.read_bytes()).hexdigest() for p in files}
-out=root/'downloads/Chapel-of-Hope-LIVE-v1.7-Windows.zip'
+out=root/'downloads/Chapel-of-Hope-LIVE-v1.9-Windows.zip'
 with zipfile.ZipFile(out,'w',zipfile.ZIP_DEFLATED,compresslevel=9) as z:
  for p in files:z.write(p,p.relative_to(root))
- z.writestr('DISTRIBUTION_MANIFEST.json',json.dumps({'version':'1.7.0','runtime':'Node >=22.12 (not bundled)','status':'READY FOR WINDOWS VALIDATION','sha256':manifest},indent=2))
+ z.writestr('DISTRIBUTION_MANIFEST.json',json.dumps({'version':'1.9.0','runtime':'Node >=22.12 (not bundled)','status':'READY FOR WINDOWS VALIDATION','sha256':manifest},indent=2))
 with zipfile.ZipFile(out) as z:
  assert z.testzip() is None
  assert not any('node_modules' in n for n in z.namelist())

@@ -1,3 +1,5 @@
+import { gratitude, invitations, acknowledgements } from "./engagementLines";
+import type { EngagementNotice } from "../../../../packages/shared/src/engagement";
 import { create } from "zustand";
 import { GIFTS, type GiftKey } from "@chapel/shared";
 import {
@@ -31,6 +33,7 @@ export const useVoiceState = create<{
   version: 0,
 }));
 const rotation = new LineRotation();
+const thanksTurns = new Map<GiftKey, number>();
 export const voiceQueue = new VoiceQueue(
   (job) =>
     useVoiceState.setState({
@@ -59,11 +62,20 @@ export function queueWish(
   name: string,
   settings: ProductionSettings,
 ) {
-  const line = rotation.next(settings.locale, key);
+  const wish = rotation.next(settings.locale, key);
+  const turn = thanksTurns.get(key) ?? 0;
+  thanksTurns.set(key, turn + 1);
+  const useThanks = settings.thanksEnabled && turn % 5 >= 3;
+  const line = useThanks
+    ? {
+        text: gratitude[settings.locale][key][(turn % 5) - 3],
+        variant: (turn % 5) - 3,
+      }
+    : wish;
   const read = settings.readNames ? spokenName(name) : "";
   voiceQueue.enqueue({
     id,
-    clipKey: `${key}-${line.variant}`,
+    clipKey: `${useThanks ? "thanks-" : ""}${key}-${line.variant}`,
     text:
       (read && settings.provider === "browser" ? read + ". " : "") + line.text,
     name: safeDisplayName(name),
@@ -76,6 +88,37 @@ export function queueWish(
     priority: GIFTS[key].priority,
     enabled:
       settings.voiceEnabled &&
+      settings.mix.voice > 0 &&
+      settings.mix.master > 0 &&
+      chapelAudio.context?.state === "running",
+    provider: settings.provider === "browser" ? browserVoice : recordedVoice,
+  });
+}
+export function queueCommunity(
+  notice: EngagementNotice,
+  settings: ProductionSettings,
+) {
+  const lines = notice.invitation
+    ? invitations[settings.locale][notice.kind as "amen" | "like" | "share"]
+    : acknowledgements[settings.locale][notice.kind];
+  const variant =
+    (notice.variant + (settings.engagement.promptVariant === "B" ? 2 : 0)) %
+    lines.length;
+  voiceQueue.enqueue({
+    id: notice.id,
+    clipKey: `${notice.invitation ? "invite" : "ack"}-${notice.kind}-${variant}`,
+    text: lines[variant],
+    name: notice.name ? safeDisplayName(notice.name) : "",
+    locale: settings.locale,
+    voiceURI: settings.voiceURI[settings.locale],
+    rate: settings.rate,
+    volume: settings.mix.voice * settings.mix.master,
+    created: Date.now(),
+    expires: Date.now() + 10000,
+    priority: notice.invitation ? -2 : -1,
+    enabled:
+      settings.voiceEnabled &&
+      (notice.invitation || settings.thanksEnabled) &&
       settings.mix.voice > 0 &&
       settings.mix.master > 0 &&
       chapelAudio.context?.state === "running",

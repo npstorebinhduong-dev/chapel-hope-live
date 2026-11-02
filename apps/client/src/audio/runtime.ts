@@ -1,3 +1,4 @@
+import { MusicDirector, type MusicTrack } from "./MusicDirector";
 import type { GiftKey } from "@chapel/shared";
 import type { AudioMix } from "./settings";
 /** Original synthesis only. Four persistent sources, at most 24 short voices.
@@ -11,6 +12,38 @@ class ChapelAudio {
   private sfx!: GainNode;
   private analyser!: AnalyserNode;
   private pads: OscillatorNode[] = [];
+  private padGains: GainNode[] = [];
+  private busMeters: Partial<
+    Record<"music" | "ambient" | "sfx", AnalyserNode>
+  > = {};
+  private director = new MusicDirector();
+  private musicEnabled = true;
+  private musicBar = -1;
+  private track = "peace";
+  private releaseOwnership: (() => void) | null = null;
+  configureMusic(track: MusicTrack, enabled: boolean) {
+    this.director.requested = track;
+    this.musicEnabled = enabled;
+  }
+  private async acquire() {
+    if (this.releaseOwnership || !navigator.locks) return true;
+    return new Promise<boolean>((resolve) => {
+      void navigator.locks.request(
+        "chapel-audio-output",
+        { ifAvailable: true },
+        async (lock) => {
+          if (!lock) {
+            resolve(false);
+            return;
+          }
+          await new Promise<void>((release) => {
+            this.releaseOwnership = release;
+            resolve(true);
+          });
+        },
+      );
+    });
+  }
   private noise: AudioBufferSourceNode | null = null;
   private noiseBuffer: AudioBuffer | null = null;
   private voices = new Set<OscillatorNode | AudioBufferSourceNode>();
@@ -28,12 +61,14 @@ class ChapelAudio {
   };
   private ducked = false;
   private lastBeat = -1;
+  private testTimers: ReturnType<typeof setTimeout>[] = [];
   triggers = 0;
   duck(active: boolean) {
     this.ducked = active;
     this.sync(this.settings, this.muted);
   }
   async unlock() {
+    if (!(await this.acquire())) throw new Error("audio_other_tab");
     if (!this.context || this.context.state === "closed") this.initialize();
     await this.context!.resume();
     return this.context!.state === "running";
@@ -56,9 +91,17 @@ class ChapelAudio {
     this.music = c.createGain();
     this.ambient = c.createGain();
     this.sfx = c.createGain();
-    this.music.connect(this.master);
-    this.ambient.connect(this.master);
-    this.sfx.connect(this.master);
+    for (const [name, node] of [
+      ["music", this.music],
+      ["ambient", this.ambient],
+      ["sfx", this.sfx],
+    ] as const) {
+      const meter = c.createAnalyser();
+      meter.fftSize = 512;
+      node.connect(meter);
+      meter.connect(this.master);
+      this.busMeters[name] = meter;
+    }
     // Original quiet room impulse; dry signal remains intelligible at low volume.
     const impulse = c.createBuffer(
       2,
@@ -76,6 +119,7 @@ class ChapelAudio {
     reverb.buffer = impulse;
     wet.gain.value = 0.12;
     this.sfx.connect(reverb);
+    this.music.connect(reverb);
     reverb.connect(wet);
     wet.connect(this.master);
     this.noiseBuffer = c.createBuffer(1, c.sampleRate * 2, c.sampleRate);
@@ -95,18 +139,19 @@ class ChapelAudio {
     this.noise.loop = true;
     this.noise.connect(low);
     this.noise.start();
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < 6; i++) {
       const o = c.createOscillator(),
         g = c.createGain();
       const real = new Float32Array([0, 0, 0, 0, 0]),
         imag = new Float32Array([0, 1, 0.22, 0.08, 0.04]);
       o.setPeriodicWave(c.createPeriodicWave(real, imag));
-      o.frequency.value = [130.81, 164.81, 196][i];
-      g.gain.value = 0.07;
+      o.frequency.value = [130.81, 164.81, 196][i % 3];
+      g.gain.value = i < 3 ? 0.045 : 0;
       o.connect(g);
       g.connect(this.music);
       o.start();
       this.pads.push(o);
+      this.padGains.push(g);
     }
     this.sync(this.settings, this.muted);
   }
@@ -121,9 +166,9 @@ class ChapelAudio {
       0.08,
     );
     this.music.gain.setTargetAtTime(
-      mix.music * (this.ducked ? 0.316 : 1),
+      (this.musicEnabled ? mix.music : 0) * (this.ducked ? 0.316 : 1),
       c.currentTime,
-      0.3,
+      this.ducked ? 0.1 : 0.4,
     );
     this.ambient.gain.setTargetAtTime(
       mix.ambient * 0.15 * (this.ducked ? 0.5 : 1),
@@ -135,35 +180,33 @@ class ChapelAudio {
   tick() {
     const c = this.context;
     if (!c || c.state !== "running") return;
-    const chord = Math.floor(c.currentTime / 12) % 4;
-    const beat = Math.floor(c.currentTime / 1.5);
-    if (beat !== this.lastBeat) {
-      this.lastBeat = beat;
-      const notes = [
-        [261.63, 329.63, 392, 523.25],
-        [220, 293.66, 349.23, 440],
-        [261.63, 349.23, 440, 523.25],
-        [196, 293.66, 392, 493.88],
-      ];
+    const score = this.director.sample(c.currentTime);
+    this.track = score.track;
+    if (score.beat !== this.lastBeat) {
+      this.lastBeat = score.beat;
+      this.tone(score.melody, 1.85, 0.055 * score.accent, false, "music");
       this.tone(
-        notes[chord][[0, 2, 1, 3, 2, 1, 0, 2][beat % 8]],
-        1.9,
-        0.055,
+        score.melody * 2.002,
+        0.65,
+        0.012 * score.accent,
         false,
         "music",
       );
     }
-    if (chord !== this.lastChord) {
-      this.lastChord = chord;
-      const chords = [
-        [130.81, 164.81, 196],
-        [110, 146.83, 174.61],
-        [130.81, 174.61, 220],
-        [98, 146.83, 196],
-      ];
-      this.pads.forEach((o, i) =>
-        o.frequency.setTargetAtTime(chords[chord][i], c.currentTime, 2),
-      );
+    if (score.bar !== this.musicBar) {
+      this.musicBar = score.bar;
+      this.lastChord = score.chord;
+      const bank = score.bar % 2;
+      this.pads.forEach((o, i) => {
+        const g = this.padGains[i].gain;
+        g.cancelAndHoldAtTime(c.currentTime);
+        if (Math.floor(i / 3) === bank)
+          o.frequency.setValueAtTime(score.frequencies[i % 3], c.currentTime);
+        g.linearRampToValueAtTime(
+          Math.floor(i / 3) === bank ? 0.045 : 0,
+          c.currentTime + 1.2,
+        );
+      });
     }
   }
   private tone(
@@ -180,6 +223,7 @@ class ChapelAudio {
       c.state !== "running" ||
       this.muted ||
       this.settings[bus] === 0 ||
+      (bus === "music" && !this.musicEnabled) ||
       this.voices.size >= 24
     )
       return;
@@ -191,9 +235,16 @@ class ChapelAudio {
     } else source.buffer = this.noiseBuffer;
     const t = c.currentTime + delay;
     g.gain.setValueAtTime(0, t);
-    g.gain.linearRampToValueAtTime(volume, t + 0.015);
+    g.gain.linearRampToValueAtTime(volume, t + (duration > 3 ? 0.3 : 0.015));
     g.gain.exponentialRampToValueAtTime(0.00001, t + duration);
-    source.connect(g);
+    const filter = noise ? c.createBiquadFilter() : null;
+    if (filter) {
+      filter.type = "bandpass";
+      filter.frequency.value = frequency || 220;
+      filter.Q.value = 0.7;
+      source.connect(filter);
+      filter.connect(g);
+    } else source.connect(g);
     g.connect(bus === "music" ? this.music : this.sfx);
     this.voices.add(source);
     source.start(t);
@@ -201,6 +252,7 @@ class ChapelAudio {
     source.onended = () => {
       source.disconnect();
       g.disconnect();
+      filter?.disconnect();
       this.voices.delete(source);
     };
   }
@@ -219,7 +271,7 @@ class ChapelAudio {
     } else {
       if (t - this.lastQuiet < 0.7) return;
       this.lastQuiet = t;
-      this.tone(kind === "arrival" ? 392 : 196, 0.35, 0.025);
+      this.tone(kind === "arrival" ? 180 : 95, 0.22, 0.015);
       this.tone(0, 0.16, 0.05, true);
     }
     this.triggers++;
@@ -245,17 +297,51 @@ class ChapelAudio {
       }
     }
     if (key === "candle_1") {
-      this.tone(0, 0.3, 0.08, true);
-      this.tone(523.25, 0.8, 0.035);
+      this.tone(1800, 0.13, 0.12, true);
+      this.tone(450, 0.45, 0.06, true);
     }
     if (key === "rose_5") {
-      this.tone(0, 0.3, 0.05, true);
-      this.tone(329.63, 0.9, 0.035);
+      this.tone(1100, 0.28, 0.07, true);
+      this.tone(120, 0.18, 0.025);
     }
+    if (key === "altar_100") this.tone(523.25, 3.4, 0.06);
     if (key === "prayer_5") this.tone(196, 1.3, 0.04);
     if (key === "altar_100" || key === "ceremony_500")
       for (const f of [130.81, 196, 261.63])
         this.tone(f, key === "altar_100" ? 3 : 4, 0.06);
+  }
+  community(kind: "heart" | "share" | "flock" | "community") {
+    if (!this.context || this.muted) return;
+    this.triggers++;
+    if (kind === "share" || kind === "flock") {
+      for (let i = 0; i < (kind === "flock" ? 3 : 1); i++)
+        this.tone(800 + i * 230, 0.65, 0.07, true, "sfx", i * 0.28);
+    }
+    if (kind !== "share") {
+      this.tone(523.25, 2.5, 0.09);
+      this.tone(523.25 * 2.76, 1.9, 0.025);
+      this.tone(196, 3, 0.025);
+    }
+  }
+  testAll() {
+    if (!this.context || this.muted) return;
+    const sequence: GiftKey[] = [
+      "candle_1",
+      "prayer_5",
+      "rose_5",
+      "bell_10",
+      "altar_100",
+      "ceremony_500",
+    ];
+    // Explicit operator preview, bounded to six scheduled cues; not a gift event.
+    this.testTimers.forEach(clearTimeout);
+    this.testTimers = sequence.map((key, i) =>
+      setTimeout(() => this.gift(key, `test-${Date.now()}-${i}`), i * 2500),
+    );
+    (["arrival", "foot", "seat", "kneel", "stand"] as const).forEach((cue, i) =>
+      this.testTimers.push(setTimeout(() => this.quiet(cue), 15000 + i * 900)),
+    );
+    this.testTimers.push(setTimeout(() => this.community("flock"), 20000));
   }
   diagnostics() {
     const values = new Float32Array(512);
@@ -264,6 +350,15 @@ class ChapelAudio {
       values.reduce((n, v) => n + v * v, 0) / values.length,
     );
     return {
+      track: this.track,
+      musicBar: this.musicBar,
+      busLevels: Object.fromEntries(
+        Object.entries(this.busMeters).map(([name, meter]) => {
+          const data = new Float32Array(512);
+          meter.getFloatTimeDomainData(data);
+          return [name, Math.sqrt(data.reduce((n, v) => n + v * v, 0) / 512)];
+        }),
+      ),
       ducked: this.ducked,
       musicGain: this.music?.gain.value ?? 0,
       ambientGain: this.ambient?.gain.value ?? 0,
@@ -280,6 +375,8 @@ class ChapelAudio {
     };
   }
   stop() {
+    this.testTimers.forEach(clearTimeout);
+    this.testTimers = [];
     for (const voice of this.voices) {
       try {
         voice.stop();
@@ -292,6 +389,11 @@ class ChapelAudio {
       } catch {}
     }
     this.pads = [];
+    this.padGains = [];
+    this.busMeters = {};
+    this.releaseOwnership?.();
+    this.releaseOwnership = null;
+    this.musicBar = -1;
     this.noise?.stop();
     this.noise = null;
     if (this.context) void this.context.close();

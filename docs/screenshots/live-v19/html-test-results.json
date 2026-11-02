@@ -1,0 +1,27 @@
+{
+  "result": "passed",
+  "mode": "local HTML document fulfilled in browser; file:// blocked by managed browser policy",
+  "conditions": "No backend/server process; all non-document HTTP/WS and browser storage blocked",
+  "checks": [
+    "embedded artwork rendered",
+    "50 prefilled viewers",
+    "AMEN dedup",
+    "20/50/100 bursts accumulate to 171 viewers without a cap",
+    "six gifts complete",
+    "persistent candles and flowers",
+    "camera returns",
+    "quality selection",
+    "reset and reload",
+    "clean 9:16 view"
+  ],
+  "observed": [
+    "candle_1",
+    "ceremony_500",
+    "altar_100",
+    "prayer_5",
+    "bell_10",
+    "rose_5"
+  ],
+  "errors": [],
+  "network": []
+}

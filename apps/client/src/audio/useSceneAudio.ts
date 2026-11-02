@@ -1,3 +1,4 @@
+import type { VoiceJob } from "../voice/queue";
 import { useEffect } from "react";
 import { attendeePose, isAttendeeMoving } from "@chapel/shared";
 import { renderClock, useSession } from "../store";
@@ -6,6 +7,7 @@ import { chapelAudio } from "./runtime";
 import { defaultProduction } from "../../../../packages/shared/src/production";
 import {
   queueWish,
+  queueCommunity,
   voiceQueue,
   useVoiceState,
   recordedVoice,
@@ -15,6 +17,10 @@ export function useSceneAudio() {
     const previous = new Map<string, string>();
     let primed = false,
       lastMeter = 0;
+    let lastNotice = "",
+      lastReaction = "",
+      lastCommand = "";
+    let pausedVoice: VoiceJob | null = null;
     let lastGift = "",
       wasVoiceAllowed = false,
       lastProvider = "";
@@ -26,6 +32,10 @@ export function useSceneAudio() {
         lastProvider = production.provider;
         if (lastProvider === "recorded") void recordedVoice.load();
       }
+      chapelAudio.configureMusic(
+        production.musicTrack,
+        production.musicEnabled,
+      );
       chapelAudio.sync(production.mix, s.settings.muted);
       const voiceAllowed =
         !s.settings.muted &&
@@ -50,6 +60,40 @@ export function useSceneAudio() {
         !voice.fading
       )
         useVoiceState.setState({ fading: true });
+      const command = s.audioCommand;
+      if (command && command.id !== lastCommand) {
+        lastCommand = command.id;
+        if (
+          Date.now() - command.at < 5000 &&
+          chapelAudio.context?.state === "running"
+        ) {
+          if (command.action === "stopVoice") {
+            pausedVoice = voiceQueue.active;
+            voiceQueue.stop();
+          }
+          if (command.action === "resumeVoice" && pausedVoice && voiceAllowed) {
+            voiceQueue.enqueue({
+              ...pausedVoice,
+              id: command.id,
+              created: Date.now(),
+              expires: Date.now() + 10000,
+            });
+            pausedVoice = null;
+          }
+          if (command.action === "testAll" && !s.settings.muted)
+            chapelAudio.testAll();
+          if (command.action === "stopAll") {
+            voiceQueue.stop();
+            chapelAudio.stop();
+            pausedVoice = null;
+          }
+          if (command.action === "sample" && voiceAllowed)
+            queueWish(command.id, "altar_100", "", {
+              ...production,
+              locale: command.locale ?? production.locale,
+            });
+        }
+      }
       chapelAudio.tick();
       const now = renderClock();
       let walking = false;
@@ -80,7 +124,11 @@ export function useSceneAudio() {
       for (const id of previous.keys()) if (!ids.has(id)) previous.delete(id);
       if (walking) chapelAudio.quiet("foot");
       if (s.active && now >= s.active.startedAt && now < s.active.endsAt) {
-        chapelAudio.gift(s.active.event.giftKey, s.active.event.eventId);
+        const marker = ["candle_1", "rose_5"].includes(s.active.event.giftKey)
+          ? 650
+          : 0;
+        if (now >= s.active.startedAt + marker)
+          chapelAudio.gift(s.active.event.giftKey, s.active.event.eventId);
         if (lastGift !== s.active.event.eventId) {
           lastGift = s.active.event.eventId;
           queueWish(lastGift, s.active.event.giftKey, s.active.event.username, {
@@ -89,6 +137,38 @@ export function useSceneAudio() {
           });
         }
       }
+      const reaction = s.community?.reaction;
+      if (
+        reaction &&
+        reaction.id !== lastReaction &&
+        now < reaction.endsAt &&
+        !s.active
+      ) {
+        lastReaction = reaction.id;
+        chapelAudio.community(reaction.kind);
+      }
+      const notice = s.community?.notice;
+      if (
+        notice &&
+        notice.id !== lastNotice &&
+        !s.active &&
+        !voiceQueue.active &&
+        now - notice.at < 15000
+      ) {
+        lastNotice = notice.id;
+        queueCommunity(notice, {
+          ...production,
+          voiceEnabled: production.voiceEnabled && !s.settings.muted,
+        });
+      }
+      if (
+        (production.engagement.quiet ||
+          !production.engagement.promptsEnabled ||
+          (s.source?.mode === "tikfinity" &&
+            s.source.connection !== "connected")) &&
+        voiceQueue.active?.priority === -2
+      )
+        voiceQueue.stop();
       if (!s.attendees.length && !s.active && lastGift) {
         lastGift = "";
         voiceQueue.stop();
@@ -106,7 +186,9 @@ export function useSceneAudio() {
         );
         if (liveFrame) {
           liveFrame.dataset.audio = JSON.stringify(diagnostics);
-          liveFrame.dataset.voiceStatus = useVoiceState.getState().status;
+          liveFrame.dataset.voiceStatus = useVoiceState.getState().speaking
+            ? "speaking"
+            : useVoiceState.getState().status;
         }
       }
     }, 100);

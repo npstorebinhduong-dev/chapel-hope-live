@@ -9,6 +9,7 @@ export interface LiveReport {
   audio: boolean;
   voice: boolean;
   voiceStatus: string;
+  audioLevels?: Record<string, number>;
 }
 interface State {
   liveReports: LiveReport[];
@@ -92,7 +93,13 @@ export const sendMetrics = (fps: number, renderer = "WebGL") => {
           chapelAudio.context?.state === "running" &&
           !useSession.getState().snapshot?.settings.muted &&
           p.mix.master > 0,
-        voiceStatus: useVoiceState.getState().status,
+        audioLevels: {
+          master: chapelAudio.diagnostics().level,
+          ...chapelAudio.diagnostics().busLevels,
+        },
+        voiceStatus: useVoiceState.getState().speaking
+          ? "speaking"
+          : useVoiceState.getState().status,
         voice:
           p.voiceEnabled &&
           provider.available({

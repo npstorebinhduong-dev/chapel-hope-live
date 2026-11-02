@@ -56,7 +56,7 @@ const result = await build({
             resolveDir: path.dirname(args.path),
           };
         });
-        builder.onLoad({ filter: /App\.tsx$/ }, async (args) => ({
+        builder.onLoad({ filter: /(App|AdminPanel)\.tsx$/ }, async (args) => ({
           contents: (await readFile(args.path, "utf8"))
             .replace('href="/"', 'href="./index.html?view=live"')
             .replace(
@@ -81,20 +81,20 @@ await writeFile(
 );
 await writeFile(
   path.join(out, "HUONG_DAN.txt"),
-  `CHAPEL OF HOPE v1.7 — BẢN HTML XEM THỬ OFFLINE
+  `CHAPEL OF HOPE v1.9 — BẢN HTML XEM THỬ OFFLINE
 
 1. Giải nén toàn bộ ZIP.
 2. Mở index.html bằng Chrome hoặc Microsoft Edge (nhấp đúp hoặc Open with).
 3. Cảnh có sẵn 50 khách ở hàng chờ + 16 NPC trong ghế. Dùng bảng bên cạnh để thử AMEN,
    20/50/100 khách, sáu quà, chất lượng, âm thanh và reset.
-4. Bấm Enable audio, bỏ Mute sound để thử chuông.
+4. Mở “Âm thanh & Lời chúc”, bỏ “Tắt toàn bộ âm thanh”, bấm “Bật âm thanh trong cửa sổ này” để thử chuông.
 5. “Mở khung LIVE sạch” mở một phiên mẫu riêng, không đồng bộ với tab điều khiển.
    Hãy dùng bảng bên cạnh cảnh trong cùng trang khi cần kiểm tra sự kiện.
 6. Comment 1 chọn nhân vật nam, 2 chọn nữ. Chỉ gift của người đó mới cho vào ghế.
 7. Tải lại trang sẽ khởi tạo lại 50 khách đang chờ. Mỗi tab là một phiên độc lập.
-8. Audio & Language chọn EN/VI/IT, giọng cùng ngôn ngữ nếu máy có sẵn.
+8. “Âm thanh & Lời chúc” chọn Anh/Việt/Ý, giọng cùng ngôn ngữ nếu máy có sẵn.
    Thiếu giọng vẫn có banner; không giả giọng tiếng khác. Voice là tùy chọn.
-9. Nút 50 AMEN + 5 gifts nằm trong Gift Test & Mapping.
+9. Nút “Thử 50 AMEN + 5 quà” nằm trong “Kiểm thử & Cài đặt”.
    TikFinity và LIVE preflight cần bản Windows production, không dùng HTML này.
 
 KHÔNG cần Node.js, npm, máy chủ, Internet hoặc kết nối TikTok.

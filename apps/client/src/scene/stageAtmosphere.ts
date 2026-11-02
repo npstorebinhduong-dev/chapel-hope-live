@@ -1,3 +1,4 @@
+import type { CommunityReaction } from "../../../../packages/shared/src/engagement";
 /** Original vector doves and slow glass-light breathing, no external assets. */
 export function drawAtmosphere(
   ctx: CanvasRenderingContext2D,
@@ -5,6 +6,9 @@ export function drawAtmosphere(
   height: number,
   seconds: number,
   low: boolean,
+  idle = true,
+  reaction: CommunityReaction | null = null,
+  now = Date.now(),
 ) {
   ctx.save();
   ctx.globalCompositeOperation = "screen";
@@ -31,15 +35,31 @@ export function drawAtmosphere(
     ctx.fill();
   }
   ctx.globalCompositeOperation = "source-over";
-  const cycle = seconds % 27;
+  const sharing =
+    reaction &&
+    ["share", "flock"].includes(reaction.kind) &&
+    now < reaction.endsAt;
+  const cycle = sharing ? (now - reaction.startedAt) / 1000 : seconds % 27;
+  const count = sharing
+    ? reaction.kind === "flock"
+      ? low
+        ? 3
+        : 5
+      : 1
+    : idle
+      ? low
+        ? 1
+        : 2
+      : 0;
   let birds = 0;
-  for (let i = 0; i < (low ? 1 : 2); i++) {
-    const t = (cycle - i * 0.8) / 9;
+  for (let i = 0; i < count; i++) {
+    const t = (cycle - i * (sharing ? 0.25 : 0.8)) / (sharing ? 4 : 9);
     if (t <= 0 || t >= 1) continue;
     birds++;
     const reverse = Math.floor(seconds / 27) % 2 === 1;
     const x = (0.12 + (reverse ? 1 - t : t) * 0.76) * width;
-    const y = (0.405 - Math.sin(t * Math.PI) * 0.045 + i * 0.014) * height;
+    const y =
+      (0.405 - Math.sin(t * Math.PI) * 0.045 + (i % 3) * 0.012) * height;
     const size = width * (i ? 0.012 : 0.016),
       flap = Math.sin(seconds * 10 - i) * 0.7;
     ctx.save();

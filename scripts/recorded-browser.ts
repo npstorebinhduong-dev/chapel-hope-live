@@ -41,7 +41,7 @@ try {
   const manifest = Object.fromEntries(
     ["en", "vi", "it"].flatMap((l) =>
       giftKeys.flatMap((k) =>
-        [0, 1].map((v) => [`${l}/${k}-${v}`, "/voice/fixture.wav"]),
+        [0, 1, 2].map((v) => [`${l}/${k}-${v}`, "/voice/fixture.wav"]),
       ),
     ),
   );
@@ -229,9 +229,9 @@ try {
     )[layer + "Gain"];
   }
   expect(errors).toEqual([]);
-  await mkdir("artifacts/live-v16", { recursive: true });
+  await mkdir("artifacts/live-v19", { recursive: true });
   await writeFile(
-    "artifacts/live-v16/recorded-provider.json",
+    "artifacts/live-v19/recorded-provider.json",
     JSON.stringify(
       {
         result: "passed",

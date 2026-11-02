@@ -81,7 +81,7 @@ export class RecordedClipProvider implements VoiceProvider {
       this.clips = Object.fromEntries(
         Object.entries(m).filter(
           ([k, v]) =>
-            /^(en|vi|it)\/(candle_1|prayer_5|rose_5|bell_10|altar_100|ceremony_500)-[01]$/.test(
+            /^(en|vi|it)\/((thanks-)?(candle_1|prayer_5|rose_5|bell_10|altar_100|ceremony_500)|invite-(amen|like|share)|ack-(amen|like|share|follow|heart|community))-[0-3]$/.test(
               k,
             ) &&
             typeof v === "string" &&
