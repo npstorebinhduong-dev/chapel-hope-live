@@ -5,7 +5,7 @@ These instructions apply to all work in this repository.
 ## Product contract
 - Build a locally runnable vertical 9:16, realistic-3D European chapel experience for TikTok LIVE-style interaction.
 - This is a **fictional, explicitly virtual** space, not a real parish or a church service.
-- Comment **AMEN** joins the chapel for free. Never require gifts for access or imply gifts guarantee blessings, healing, or divine outcomes.
+- Comment **AMEN** creates one free attendee avatar in the visible waiting area only. **Do not automatically move AMEN commenters into the chapel or seat them.** Only a valid gift event from that viewer advances the avatar into the chapel for a visual sequence and then a seat if available. Comment **1 = male avatar**, **2 = female avatar**; these comments are not gifts. Keep free virtual participation possible in the waiting area, never imply gifts buy a blessing, healing, or spiritual outcome. Detailed overriding interaction contract: `docs/CODEX_PROMPT_06_AMEN_WAIT_GIFT_ENTRY_GENDER_VI.md`.
 - Keep exactly SIX gift actions with distinct identifiers: `candle_1`, `prayer_5`, `rose_5`, `bell_10`, `altar_100`, `ceremony_500`. Both 5-coin actions are different events. Do not route by coin value alone.
 - Optimize for a high-quality, busy scene without overlapping avatars, unreadable labels, camera locks, or excessive rendering load.
 - English first; externalize strings for future Italian and Spanish translations.
