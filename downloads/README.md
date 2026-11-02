@@ -1,7 +1,9 @@
-# Bản HTML xem thử offline
+# HTML offline v1.4 — Task #06
 
-[Tải Chapel-of-Hope-HTML-Preview.zip](https://github.com/npstorebinhduong-dev/chapel-hope-live/blob/feat/chapel-live-2-5d/downloads/Chapel-of-Hope-HTML-Preview.zip?raw=true)
+[Tải ZIP v1.4](https://github.com/npstorebinhduong-dev/chapel-hope-live/blob/feat/gift-entry-queue/downloads/Chapel-of-Hope-HTML-Preview.zip?raw=true)
 
-Giải nén, mở `index.html` bằng Chrome hoặc Edge. Không cần Node.js, server hoặc Internet. Có sẵn 50 khách mẫu và bảng thử AMEN/sáu quà. Mỗi tab là một phiên riêng; tải lại trang sẽ khởi tạo lại.
+Giải nén và mở `index.html` bằng Chrome/Edge. Không cần Node, máy chủ hoặc Internet. Mặc định 50 người **ở hàng chờ**, không tự vào ghế. Chọn ID trong bảng, dùng AMEN / 1 Male / 2 Female / gift; chỉ đúng người tặng mới được vào.
 
-ZIP này được lưu để có đường dẫn tải qua GitHub, thay cho đường dẫn workspace không tải được trong giao diện chat. Để tạo lại từ mã nguồn: `npm ci`, `npm run build:preview`, `npm run test:preview`. Xem `HUONG_DAN.txt` và `test-results.json` trong ZIP để biết cách dùng và phạm vi kiểm thử.
+Một tab là một phiên độc lập. Khung LIVE sạch mở tab mới không chia sẻ điều khiển. Bật âm thanh bằng Enable audio và bỏ Mute sound; ba mức âm riêng có thể kéo về 0. Tải lại sẽ khởi tạo lại 50 người chờ.
+
+ZIP gồm HTML tự chứa, hướng dẫn, báo cáo, nguồn asset, preview và kết quả test. Trình duyệt cloud chặn `file://`, nên bài kiểm tra chạy HTML local được intercept không backend/tài nguyên ngoài; chi tiết ghi trong `test-results.json`. Bản server tiêu chuẩn vẫn chạy bằng `npm ci`, `npm run dev`.

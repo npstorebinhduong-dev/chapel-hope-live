@@ -12,7 +12,8 @@ createRoot(document.getElementById("root")!).render(
       <header className="preview-bar">
         <strong>BẢN XEM THỬ OFFLINE</strong>
         <span>
-          50 khách mẫu · Thử AMEN/quà ở bảng bên cạnh · Tải lại để khởi tạo lại.
+          50 khách đang chờ · Thử AMEN/quà ở bảng bên cạnh · Tải lại để khởi tạo
+          lại.
         </span>
         <a href="./index.html?view=live" target="_blank" rel="noreferrer">
           Mở khung LIVE sạch ↗

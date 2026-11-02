@@ -11,6 +11,7 @@ import {
 } from "@chapel/shared";
 import { ChapelEngine } from "../../../packages/shared/src/engine.ts";
 import path from "node:path";
+import { fillGiftedSeats } from "../../../packages/shared/src/fixtures.ts";
 
 export function createChapelServer() {
   const engine = new ChapelEngine();
@@ -158,13 +159,11 @@ export function createChapelServer() {
     };
     const result = engine.gift(event);
     broadcast();
-    res
-      .status(result.status === "queue_full" ? 429 : 200)
-      .json({
-        ...result,
-        eventId: event.eventId,
-        ...(result.status === "queue_full" ? { retryAfterMs: 2000 } : {}),
-      });
+    res.status(result.status === "queue_full" ? 429 : 200).json({
+      ...result,
+      eventId: event.eventId,
+      ...(result.status === "queue_full" ? { retryAfterMs: 2000 } : {}),
+    });
   });
   app.post("/mock/spam-amen", (req, res) => {
     const input = z
@@ -195,6 +194,11 @@ export function createChapelServer() {
       joined,
       capacity: 100,
     });
+  });
+  app.post("/mock/full-seat", (_req, res) => {
+    const result = fillGiftedSeats(engine);
+    broadcast();
+    res.json(result);
   });
   app.post("/mock/control", (req, res) => {
     const input = controlSchema.safeParse(req.body);
@@ -228,12 +232,9 @@ export function createChapelServer() {
       res: express.Response,
       _next: express.NextFunction,
     ) => {
-      res
-        .status(error instanceof SyntaxError ? 400 : 500)
-        .json({
-          error:
-            error instanceof SyntaxError ? "invalid_json" : "request_failed",
-        });
+      res.status(error instanceof SyntaxError ? 400 : 500).json({
+        error: error instanceof SyntaxError ? "invalid_json" : "request_failed",
+      });
     },
   );
   const timer = setInterval(broadcast, 100);

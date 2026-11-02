@@ -958,3 +958,106 @@ dd {
   position: absolute;
   inset: 0;
 }
+
+/* Queue contract #06: the foyer stays visible; HUD moves above the sanctuary. */
+.live-header .join-note {
+  display: block;
+  font-size: 1.95cqw;
+}
+.join-call {
+  font-size: 2.8cqw;
+}
+.entry-note {
+  margin: 0.7cqw 0 0;
+  font-size: 1.95cqw;
+  color: #dfcfad;
+}
+.presence {
+  top: 17%;
+  gap: 1.4cqw;
+  font-size: 1.75cqw;
+}
+.live-bottom {
+  top: 20%;
+  bottom: auto;
+}
+.activity {
+  font-size: 2cqw;
+}
+.gift-guide {
+  padding: 1cqw 0;
+  background: #14120dc4;
+}
+.supporters {
+  min-height: 4cqw;
+  padding: 0.6cqw 0;
+}
+.live-footer {
+  padding: 0.6cqw 0 0;
+}
+.special-prayer,
+.ceremony-banner {
+  top: 35%;
+}
+.waiting-caption {
+  position: absolute;
+  top: 76.8%;
+  width: 100%;
+  text-align: center;
+  font-size: 1.65cqw;
+  letter-spacing: 0.15cqw;
+  color: #f1dfb7;
+  text-shadow: 0 1px 5px #000;
+  background: linear-gradient(90deg, transparent, #1f1a13b8, transparent);
+  padding: 0.7cqw;
+  pointer-events: none;
+}
+.vignette {
+  background: linear-gradient(
+    #100e0bbd,
+    #15120b22 15%,
+    transparent 35%,
+    transparent 78%,
+    #17140b35 100%
+  );
+}
+.audio-hint {
+  top: 76%;
+  bottom: auto;
+}
+.attendee-list {
+  display: grid;
+  gap: 6px;
+  max-height: 320px;
+  overflow-y: auto;
+}
+.attendee-list button {
+  display: grid;
+  gap: 4px;
+  text-align: left;
+}
+.attendee-list small {
+  font-size: 10px;
+  overflow-wrap: anywhere;
+  opacity: 0.75;
+}
+.audio-mixer {
+  display: grid;
+  gap: 10px;
+  margin: 20px 0;
+}
+.audio-mixer label {
+  display: grid;
+  grid-template-columns: 150px 1fr 38px;
+  gap: 12px;
+  align-items: center;
+  font-size: 12px;
+}
+.audio-mixer input {
+  min-width: 0;
+  accent-color: #cfad71;
+}
+[data-testid="audio-status"] {
+  font-size: 11px;
+  color: #bdb199;
+}

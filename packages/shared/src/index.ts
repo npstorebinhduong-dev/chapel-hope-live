@@ -90,6 +90,17 @@ export const controlSchema = z.discriminatedUnion("action", [
     enabled: z.boolean(),
   }),
 ]);
+export type AvatarGender = "male" | "female";
+export const parseComment = (text: string): "amen" | AvatarGender | "other" => {
+  const value = text.trim();
+  return value === "1"
+    ? "male"
+    : value === "2"
+      ? "female"
+      : isAmen(value)
+        ? "amen"
+        : "other";
+};
 export const isAmen = (text: string) => /^amen[.!?]*$/i.test(text.trim());
 export const LIMITS = {
   viewers: 100,
@@ -99,9 +110,17 @@ export const LIMITS = {
   dedup: 4096,
   ttl: 600_000,
   supporters: 256,
+  preferences: 256,
+  visibleWaiting: 12,
 } as const;
 export type Vec3 = [number, number, number];
 export type AttendeeState =
+  | "waiting"
+  | "called_by_gift"
+  | "walking_from_queue"
+  | "walking_in_aisle"
+  | "returning"
+  | "inside_standing_wait"
   | "spawning"
   | "walking_to_seat"
   | "seated"
@@ -109,6 +128,17 @@ export type AttendeeState =
   | "kneeling"
   | "gift_reacting"
   | "leaving";
+export interface Journey {
+  kind: "gift" | "seat" | "leave";
+  approach: Vec3[];
+  departure: Vec3[];
+  startAt: number;
+  entryAt?: number;
+  actionAt: number;
+  actionUntil: number;
+  endAt: number;
+  giftKey?: GiftKey;
+}
 export interface Attendee {
   userId: string;
   username: string;
@@ -119,12 +149,22 @@ export interface Attendee {
   walkAt: number;
   leaveAt?: number;
   variant: number;
+  admission?: "waiting" | "invited" | "inside";
+  gender?: AvatarGender;
+  pendingGender?: AvatarGender;
+  waitingSlot?: number | null;
+  queueMotion?: { from: Vec3; to: Vec3; startAt: number; endAt: number };
+  journey?: Journey;
+  transient?: boolean;
 }
 export interface ActiveGift {
   presentation?: boolean;
   event: GiftEvent;
   startedAt: number;
   endsAt: number;
+  dispatchedAt?: number;
+  returnEndsAt?: number;
+  effectApplied?: boolean;
 }
 export interface Snapshot {
   now: number;
@@ -132,6 +172,17 @@ export interface Snapshot {
   attendees: Attendee[];
   active: ActiveGift | null;
   queueLength: number;
+  waitingCount: number;
+  insideCount: number;
+  enteringCount: number;
+  seatedCount: number;
+  giftPending: number;
+  giftProcessed: number;
+  ignoredDuplicates: number;
+  avatarVariantByUser: Record<
+    string,
+    { gender: AvatarGender; variant: number }
+  >;
   accepted: number;
   completed: number;
   rejected: number;
@@ -150,9 +201,9 @@ export const seatPosition = (seat: number): Vec3 => {
 export const overflowPosition = (index: number): Vec3 => {
   const col = index % 8;
   return [
-    (col % 2 === 0 ? -1 : 1) * (0.625 + Math.floor(col / 2) * 1.25),
+    (col % 2 === 0 ? -1 : 1) * (2 + Math.floor(col / 2) * 0.86),
     0,
-    8.2 + Math.floor(index / 8) * 1.25,
+    7.8 + Math.floor(index / 8) * 1.25,
   ];
 };
 export const destination = (a: Attendee): Vec3 =>
@@ -211,84 +262,14 @@ export function alongPath(points: Vec3[], progress: number): Vec3 {
   }
   return [...points.at(-1)!];
 }
-export function attendeePose(
-  a: Attendee,
-  now: number,
-  active: ActiveGift | null,
-): { position: Vec3; state: AttendeeState; visible: boolean } {
-  const route = arrivalPath(a),
-    duration = (pathLength(route) / 2.4) * 1000;
-  if (a.leaveAt !== undefined && now >= a.leaveAt) {
-    const exit = departurePath(a);
-    const p = (now - a.leaveAt) / ((pathLength(exit) / 2.4) * 1000);
-    return {
-      position: alongPath(exit, p),
-      state: "leaving",
-      visible: p < 1 && p >= 0,
-    };
-  }
-  if (
-    active?.event.userId === a.userId &&
-    (active.event.giftKey === "prayer_5" ||
-      active.event.giftKey === "altar_100") &&
-    (now < a.walkAt + duration || a.seat === null || active.presentation)
-  ) {
-    const p = (now - active.startedAt) / (active.endsAt - active.startedAt);
-    const altar = active.event.giftKey === "altar_100";
-    const travel = altar
-      ? p < 0.2
-        ? p / 0.2
-        : p > 0.8
-          ? (1 - p) / 0.2
-          : 1
-      : 1;
-    return {
-      position: [0, 0, -6.8 - travel * 2.2],
-      state: altar && (p < 0.2 || p > 0.8) ? "gift_reacting" : "kneeling",
-      visible: true,
-    };
-  }
-  if (now < a.walkAt)
-    return { position: route[0], state: "spawning", visible: false };
-  const walk = (now - a.walkAt) / duration;
-  if (walk < 1)
-    return {
-      position: alongPath(route, walk),
-      state: "walking_to_seat",
-      visible: true,
-    };
-  let position = destination(a),
-    state: AttendeeState = a.seat === null ? "praying_idle" : "seated";
-  if (active) {
-    const key = active.event.giftKey,
-      selected = active.event.userId === a.userId;
-    if (selected && key === "altar_100") {
-      const end = destination(a),
-        lane = 0;
-      const altarRoute: Vec3[] =
-        a.seat === null
-          ? [
-              [end[0], 0, end[2]],
-              [lane, 0, 7.8],
-              [lane, 0, -9],
-              [0, 0, -9],
-            ]
-          : [
-              [end[0], 0, end[2]],
-              [end[0], 0, end[2] - 0.65],
-              [lane, 0, end[2] - 0.65],
-              [lane, 0, -9],
-              [0, 0, -9],
-            ];
-      const p = (now - active.startedAt) / (active.endsAt - active.startedAt);
-      position = alongPath(
-        altarRoute,
-        p < 0.35 ? p / 0.35 : p > 0.65 ? (1 - p) / 0.35 : 1,
-      );
-      state = p >= 0.35 && p <= 0.65 ? "kneeling" : "gift_reacting";
-    } else if ((selected && key === "prayer_5") || key === "ceremony_500")
-      state = "kneeling";
-    else if (key === "bell_10" || selected) state = "gift_reacting";
-  }
-  return { position, state, visible: true };
-}
+export {
+  attendeePose,
+  waitingPosition,
+  waitingPose,
+  walkDuration,
+  giftApproach,
+  giftReturn,
+  queueExitPath,
+  easedAlongPath,
+  WALK_SPEED,
+} from "./motion.ts";

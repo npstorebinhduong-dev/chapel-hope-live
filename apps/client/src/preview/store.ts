@@ -7,6 +7,7 @@ import {
   controlSchema,
   type Snapshot,
 } from "@chapel/shared";
+import { fillGiftedSeats } from "../../../../packages/shared/src/fixtures";
 import { en } from "../strings";
 
 // Only bundled by build-preview: the normal app continues using HTTP/WebSocket.
@@ -33,7 +34,7 @@ function publish() {
 export function connectSession() {
   if (!initialized) {
     initialized = true;
-    // Populate the review scene immediately; subsequent joins walk in normally.
+    // AMEN fixture contains ONLY waiting attendees; gifts are required for entry.
     for (let i = 0; i < 50; i++)
       engine.comment({
         type: "comment",
@@ -65,6 +66,11 @@ export async function post(
   data: unknown,
 ): Promise<{ status?: string; joined?: number }> {
   const timestamp = Date.now();
+  if (endpoint === "mock/full-seat") {
+    const result = fillGiftedSeats(engine);
+    publish();
+    return result;
+  }
   if (endpoint === "mock/comment") {
     const input = commentSchema.parse(data);
     const result = engine.comment({

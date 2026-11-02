@@ -40,3 +40,7 @@ Repository không có bộ GLB nam/nữ chất lượng cao, skinning và các c
 `assets.ts` khai báo URL GLB nội bộ, credit, license, scale, góc hướng và bảng clip theo `AttendeeState`. `scene/AttendeeLOD.tsx` dùng GLTF cache, clone skeleton, AnimationMixer/crossfade 0,3 giây cho nhân vật được focus, có Suspense và error boundary để trả về fallback khi tải model lỗi. Vị trí gốc vẫn lấy từ đường đi của session. Các nhân vật còn lại giữ renderer instanced có giới hạn.
 
 Đây là pipeline thực thi được nhưng **chưa được kiểm chứng với bộ asset người sản xuất cụ thể**. Cần cấp bộ model/clip có quyền phân phối, kiểm tra tên xương, pose ngồi/quỳ, root motion, hướng -Z, kích thước mét, LOD và hiệu năng trước khi bật rộng cho toàn crowd. Xem `ASSET_PIPELINE.md`.
+
+## Âm thanh v1.4 / Task #05–06
+
+`apps/client/src/audio/runtime.ts` tạo pad sine gốc, room tone bằng noise, room impulse và SFX bằng Web Audio. Không dùng bài hát, bản thu organ/choir/chuông tải từ ngoài; không gán giấy phép nhạc bên thứ ba cho âm tổng hợp. Ba PNG và atlas v1.3 được giữ nguyên. Âm tổng hợp và sprite vẫn có giới hạn về độ chân thực; đây không phải bản ghi thánh lễ thật.

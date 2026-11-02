@@ -3,6 +3,7 @@ import {
   attendeePose,
   type Attendee,
   type ActiveGift,
+  LIMITS,
   type Vec3,
 } from "@chapel/shared";
 import { renderClock, sendMetrics, useSession } from "./store";
@@ -26,6 +27,13 @@ type Motion = {
   x: number;
   y: number;
   height: number;
+  variant: number;
+  oldVariant: number;
+  appearance: number;
+  opacity: number;
+  step: number;
+  worldX: number;
+  worldZ: number;
 };
 const npcs: Actor[] = Array.from({ length: 16 }, (_, i) => ({
   userId: `npc-${i}`,
@@ -243,6 +251,81 @@ export function StageChapel() {
       }
       ctx.restore();
     };
+    const actorLayer = document.createElement("canvas");
+    actorLayer.width = 128;
+    actorLayer.height = 256;
+    const actorContext = actorLayer.getContext("2d")!;
+    const ease = (n: number) => n * n * (3 - 2 * n);
+    const drawActor = (
+      m: Motion,
+      phase: number,
+      walking: boolean,
+      bow: number,
+    ) => {
+      const blend = ease(m.blend),
+        appearance = ease(m.appearance);
+      const scale = (pose: number) =>
+        pose === 3 ? 1 : SPRITE_HEIGHTS[pose]! / 357;
+      const h =
+        m.height * ((1 - blend) * scale(m.previous) + blend * scale(m.pose));
+      const dh = h * height,
+        dw = m.height * height * 0.46;
+      actorContext.clearRect(0, 0, 128, 256);
+      actorContext.globalCompositeOperation = "lighter";
+      const resolution =
+        detailLevel === "low"
+          ? 72
+          : detailLevel === "high"
+            ? 192
+            : dh < 65
+              ? 80
+              : 128;
+      for (const [variant, weight] of [
+        [m.oldVariant, 1 - appearance],
+        [m.variant, appearance],
+      ]) {
+        if (!weight) continue;
+        for (const [pose, poseWeight] of [
+          [m.previous, 1 - blend],
+          [m.pose, blend],
+        ]) {
+          if (!poseWeight) continue;
+          const frameFloat = ((phase / (Math.PI * 2)) % 1) * 8;
+          const frame = Math.floor(frameFloat),
+            part = frameFloat - frame;
+          const steps =
+            walking && pose === 3
+              ? [
+                  [frame, 1 - part],
+                  [(frame + 1) % 8, part],
+                ]
+              : [[-1, 1]];
+          for (const [step, stepWeight] of steps) {
+            actorContext.globalAlpha = weight * poseWeight * stepWeight;
+            actorContext.drawImage(
+              actorImage(variant % 4, pose, resolution, variant, step),
+              0,
+              0,
+              128,
+              256,
+            );
+          }
+        }
+      }
+      ctx.save();
+      ctx.globalAlpha = m.opacity;
+      const sway = walking
+        ? Math.sin(phase * 2) * dh * 0.006
+        : Math.sin(phase) * 0.4;
+      ctx.drawImage(
+        actorLayer,
+        m.x * width - dw / 2,
+        (m.y + bow) * height - dh + sway,
+        dw,
+        dh,
+      );
+      ctx.restore();
+    };
     const draw = (time: number) => {
       if (disposed) return;
       raf = requestAnimationFrame(draw);
@@ -358,41 +441,10 @@ export function StageChapel() {
           role: "viewer" as const,
         })),
       ];
-      const focus =
-        active &&
-        actors.find(
-          (a) => a.role === "viewer" && a.userId === active.event.userId,
-        );
-      if (
-        active &&
-        (active.presentation || !focus || selectedGift === "rose_5") &&
-        ["prayer_5", "altar_100", "rose_5"].includes(selectedGift ?? "")
-      ) {
-        actors.push({
-          userId: `presentation-${active.event.eventId}`,
-          username: active.event.username,
-          seat: null,
-          overflow: 0,
-          joinedAt: 0,
-          lastSeen: now,
-          walkAt: 0,
-          variant: focus?.variant ?? 0,
-          role: "presenter",
-        });
-      }
       const used = new Set<string>();
       const projected = actors
         .map((a) => {
-          const event: ActiveGift | null =
-            a.role === "npc"
-              ? selectedGift === "ceremony_500"
-                ? active!
-                : null
-              : a.role === "presenter"
-                ? { ...active!, event: { ...active!.event, userId: a.userId } }
-                : active?.presentation
-                  ? null
-                  : (active ?? null);
+          const event: ActiveGift | null = active ?? null;
           const pose =
             a.role === "npc"
               ? {
@@ -406,24 +458,20 @@ export function StageChapel() {
                   visible: true,
                 }
               : attendeePose(a, now, event);
-          if (a.role === "presenter") {
-            pose.position = [selectedGift === "rose_5" ? 3.5 : 0, 0, -8.8];
-            pose.visible = true;
-            pose.state =
-              selectedGift === "rose_5" ? "gift_reacting" : "kneeling";
-          }
           const p = projectStage(pose.position[0], pose.position[2]);
           const walking =
-            pose.state === "walking_to_seat" ||
-            pose.state === "leaving" ||
-            (pose.state === "gift_reacting" &&
-              selectedGift === "altar_100" &&
-              a.userId === active?.event.userId);
+            [
+              "walking_to_seat",
+              "walking_from_queue",
+              "walking_in_aisle",
+              "returning",
+              "leaving",
+            ].includes(pose.state) && !!a.journey;
           const target = walking
             ? 3
             : pose.state === "kneeling"
               ? 2
-              : a.seat !== null && Math.abs(pose.position[0]) > 1.4
+              : pose.state === "seated"
                 ? 1
                 : 0;
           const id = `${a.role}:${a.userId}`;
@@ -437,6 +485,13 @@ export function StageChapel() {
               x: p.x,
               y: p.y,
               height: p.height,
+              variant: a.variant,
+              oldVariant: a.variant,
+              appearance: 1,
+              opacity: a.role === "npc" ? 1 : 0,
+              step: a.variant * 1.31,
+              worldX: pose.position[0],
+              worldZ: pose.position[2],
             };
             motions.set(id, motion);
           }
@@ -445,6 +500,24 @@ export function StageChapel() {
             motion.pose = target;
             motion.blend = 0;
           }
+          if (motion.variant !== a.variant && motion.appearance >= 1) {
+            motion.oldVariant = motion.variant;
+            motion.variant = a.variant;
+            motion.appearance = 0;
+          }
+          motion.appearance = Math.min(1, motion.appearance + dt / 0.65);
+          const fade =
+            a.leaveAt !== undefined && !a.journey
+              ? Math.max(0, 1 - (now - a.leaveAt) / 1200)
+              : 1;
+          motion.opacity += (fade - motion.opacity) * (1 - Math.exp(-dt * 9));
+          const distance = Math.hypot(
+            pose.position[0] - motion.worldX,
+            pose.position[2] - motion.worldZ,
+          );
+          if (walking) motion.step += Math.min(1, distance) * 3.4;
+          motion.worldX = pose.position[0];
+          motion.worldZ = pose.position[2];
           motion.blend = Math.min(1, motion.blend + dt / 0.45);
           const blend = 1 - Math.exp(-dt * 12);
           motion.x += (p.x - motion.x) * blend;
@@ -458,11 +531,18 @@ export function StageChapel() {
         projected
           .map(
             ({ a, motion, pose }) =>
-              `${a.role}:${a.userId}:${motion.pose}:${pose.visible}`,
+              `${a.role}:${a.userId}:${motion.pose}:${pose.visible}:${motion.variant}`,
           )
           .join("|") + level;
       const animateCrowd =
-        projected.some((p) => p.walking || p.motion.blend < 1) ||
+        projected.some(
+          (p) =>
+            p.walking ||
+            p.motion.blend < 1 ||
+            p.motion.appearance < 1 ||
+            p.motion.opacity < 0.99 ||
+            (p.a.queueMotion?.endAt ?? 0) > now,
+        ) ||
         selectedGift === "altar_100" ||
         selectedGift === "bell_10";
       // Distance/animation LOD: idle congregation is repainted at 8 Hz into a
@@ -491,7 +571,7 @@ export function StageChapel() {
             ctx.rect(0, 0, width, PEW_RAILS[row]! * height);
             ctx.clip();
           }
-          const phase = time * 0.006 + a.variant * 1.31;
+          const phase = walking ? m.step : time * 0.0015 + a.variant * 1.31;
           const bow =
             selectedGift === "bell_10"
               ? Math.sin((fx.strength * Math.PI) / 2) * 0.002
@@ -513,30 +593,32 @@ export function StageChapel() {
             ctx.fill();
             ctx.restore();
           }
-          sprite(
-            a.variant % 4,
-            m.previous,
-            m.x,
-            m.y + bow,
-            m.height * (1 + (Math.floor(a.variant / 4) - 1) * 0.025),
-            1 - m.blend,
-            phase,
-            walking,
-            false,
-            a.variant,
-          );
-          sprite(
-            a.variant % 4,
-            m.pose,
-            m.x,
-            m.y + bow,
-            m.height * (1 + (Math.floor(a.variant / 4) - 1) * 0.025),
-            m.blend,
-            phase,
-            walking,
-            false,
-            a.variant,
-          );
+          drawActor(m, phase, walking, bow);
+          if (
+            a.role === "viewer" &&
+            a.waitingSlot != null &&
+            a.waitingSlot < LIMITS.visibleWaiting &&
+            state?.settings.npcs !== undefined
+          ) {
+            ctx.save();
+            ctx.globalAlpha = m.opacity;
+            ctx.font = `${Math.max(8, width * 0.017)}px Arial`;
+            ctx.textAlign = "center";
+            ctx.fillStyle = "#f5e7ca";
+            ctx.shadowColor = "#111";
+            ctx.shadowBlur = 3;
+            const label =
+              a.username.length > 10
+                ? a.username.slice(0, 9) + "…"
+                : a.username;
+            ctx.fillText(
+              label,
+              m.x * width,
+              (m.y - m.height - 0.008) * height,
+              width * 0.12,
+            );
+            ctx.restore();
+          }
           ctx.restore();
         }
         cachedCount = drawn;
@@ -684,6 +766,16 @@ export function StageChapel() {
       element.dataset.candles = String(state?.candles ?? 0);
       element.dataset.roses = String(state?.roses ?? 0);
       element.dataset.quality = level;
+      element.dataset.waiting = String(state?.waitingCount ?? 0);
+      element.dataset.inside = String(state?.insideCount ?? 0);
+      element.dataset.seated = String(state?.seatedCount ?? 0);
+      element.dataset.variants = JSON.stringify(
+        state?.avatarVariantByUser ?? {},
+      );
+      element.dataset.visibleWaiting = String(
+        projected.filter((p) => p.a.waitingSlot != null && p.pose.visible)
+          .length,
+      );
     };
     Promise.all([
       loadImage("/art/chapel-stage.png"),

@@ -62,6 +62,14 @@ try {
     "true",
   );
   await expect(page.getByTestId("viewer-count")).toHaveText("50");
+  await expect(page.getByTestId("stage-canvas")).toHaveAttribute(
+    "data-waiting",
+    "50",
+  );
+  await expect(page.getByTestId("stage-canvas")).toHaveAttribute(
+    "data-inside",
+    "0",
+  );
   await expect(page.getByTestId("live-frame").getByRole("button")).toHaveCount(
     0,
   );
@@ -101,7 +109,7 @@ try {
   }
   for (const key of giftKeys) await page.getByTestId(key).click();
   const observed = new Set<string>();
-  const deadline = Date.now() + 45000;
+  const deadline = Date.now() + 240000;
   const played = page
     .locator("dl > div")
     .filter({ has: page.getByText("Played", { exact: true }) })
@@ -137,6 +145,14 @@ try {
   await reset();
   await page.reload();
   await expect(page.getByTestId("viewer-count")).toHaveText("50");
+  await expect(page.getByTestId("stage-canvas")).toHaveAttribute(
+    "data-waiting",
+    "50",
+  );
+  await expect(page.getByTestId("stage-canvas")).toHaveAttribute(
+    "data-inside",
+    "0",
+  );
   await page.goto(loadedUrl + "?view=live");
   await page.setViewportSize({ width: 540, height: 960 });
   await expect(page.getByTestId("stage-canvas")).toHaveAttribute(

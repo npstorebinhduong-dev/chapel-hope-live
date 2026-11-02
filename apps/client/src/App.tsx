@@ -5,7 +5,9 @@ const Chapel = lazy(() =>
   import("./StageChapel").then((module) => ({ default: module.StageChapel })),
 );
 import { connectSession, post, useSession } from "./store";
-import { unlockAudio, playBell } from "./audio";
+import { unlockAudio } from "./audio";
+import { useSceneAudio } from "./audio/useSceneAudio";
+import { useAudioSettings, type AudioLayer } from "./audio/settings";
 import { en } from "./strings";
 
 export function GiftIcon({ giftKey }: { giftKey: GiftKey }) {
@@ -52,8 +54,17 @@ function LiveView() {
   const state = useSession((s) => s.snapshot),
     connected = useSession((s) => s.connected);
   const [audio, setAudio] = useState(false);
-  const active = state?.active;
+  const active =
+    state?.active &&
+    state.now >= state.active.startedAt &&
+    state.now < state.active.endsAt
+      ? state.active
+      : null;
   const ceremony = active?.event.giftKey === "ceremony_500";
+  const hiddenWaiting =
+    state?.attendees.filter(
+      (a) => a.admission === "waiting" && (a.waitingSlot ?? Infinity) >= 12,
+    ).length ?? 0;
   return (
     <main className="live-shell">
       <div
@@ -82,13 +93,30 @@ function LiveView() {
             <span />✧<span />
           </div>
           <p className="join-call">{en.join}</p>
-          <p className="join-note">{en.joinNote}</p>
+          <p className="join-note">{en.genderHint}</p>
+          <p className="entry-note">{en.entryHint}</p>
         </header>
         <div className="presence">
           <span className={`status-dot ${connected ? "" : "disconnected"}`} />
-          {state?.attendees.length ?? 0} {en.present}
+          <span data-testid="live-waiting">
+            {state?.waitingCount ?? 0} {en.waiting}
+          </span>
+          <span data-testid="live-inside">
+            {state?.insideCount ?? 0} {en.inside}
+          </span>
+          {(state?.enteringCount ?? 0) > 0 && (
+            <span>
+              {state?.enteringCount} {en.entering}
+            </span>
+          )}
           <span className="presence-divider" /> {state?.settings.npcs ? 16 : 0}{" "}
           {en.background}
+        </div>
+        <div className="waiting-caption">
+          {en.waitingLine}
+          {hiddenWaiting > 0
+            ? ` · +${hiddenWaiting} ${en.waiting.toLowerCase()}`
+            : ""}
         </div>
         {!connected && (
           <div role="status" className="connection-note">
@@ -163,6 +191,7 @@ function LiveView() {
   );
 }
 export function ControlView() {
+  const audioSettings = useAudioSettings();
   const quality = useQuality((s) => s.level),
     setQuality = useQuality((s) => s.set);
   const state = useSession((s) => s.snapshot),
@@ -253,6 +282,22 @@ export function ControlView() {
                 {en.amen} <span>↗</span>
               </button>
               <button
+                disabled={busy || !connected || !userId.trim() || !name.trim()}
+                onClick={() =>
+                  void run("mock/comment", { ...identity, text: "1" })
+                }
+              >
+                {en.male}
+              </button>
+              <button
+                disabled={busy || !connected || !userId.trim() || !name.trim()}
+                onClick={() =>
+                  void run("mock/comment", { ...identity, text: "2" })
+                }
+              >
+                {en.female}
+              </button>
+              <button
                 disabled={busy || !connected}
                 onClick={() => void run("mock/spam-amen", { count: 20 })}
               >
@@ -269,6 +314,15 @@ export function ControlView() {
                 onClick={() => void run("mock/spam-amen", { count: 100 })}
               >
                 + {en.burst100}
+              </button>
+              <button
+                disabled={busy || !connected}
+                onClick={() => {
+                  if (confirm(en.confirmFullSeats))
+                    void run("mock/full-seat", {});
+                }}
+              >
+                {en.fullSeats}
               </button>
             </div>
           </section>
@@ -349,6 +403,39 @@ export function ControlView() {
               {audio ? en.audioReady : en.unlock}
             </button>
             <p className="small-note">{en.audioNote}</p>
+            <div className="audio-mixer">
+              {(["music", "ambient", "sfx"] as AudioLayer[]).map((layer) => (
+                <label key={layer}>
+                  {en[layer]}
+                  <input
+                    type="range"
+                    aria-label={en[layer]}
+                    min="0"
+                    max="1"
+                    step="0.01"
+                    value={audioSettings.mix[layer]}
+                    onChange={(event) =>
+                      audioSettings.set(layer, Number(event.target.value))
+                    }
+                  />
+                  <span>{Math.round(audioSettings.mix[layer] * 100)}%</span>
+                </label>
+              ))}
+            </div>
+            <output
+              data-testid="audio-status"
+              data-audio={JSON.stringify({
+                contextTime: audioSettings.contextTime,
+                chord: audioSettings.chord,
+                running: audioSettings.running,
+                voices: audioSettings.voices,
+                level: audioSettings.level,
+                triggers: audioSettings.triggers,
+              })}
+            >
+              {audioSettings.running ? en.audioRunning : en.soundLocked} ·{" "}
+              {audioSettings.voices} {en.audioVoices}
+            </output>
           </section>
         </div>
         <aside>
@@ -361,6 +448,12 @@ export function ControlView() {
             </div>
             <dl>
               {[
+                [en.waiting, state?.waitingCount ?? 0],
+                [en.inside, state?.insideCount ?? 0],
+                [en.entering, state?.enteringCount ?? 0],
+                [en.seated, state?.seatedCount ?? 0],
+                [en.pendingGifts, state?.giftPending ?? 0],
+                [en.duplicates, state?.ignoredDuplicates ?? 0],
                 [en.queue, state?.queueLength ?? 0],
                 [en.accepted, state?.accepted ?? 0],
                 [en.completed, state?.completed ?? 0],
@@ -389,6 +482,27 @@ export function ControlView() {
               </div>
             )}
           </section>
+          <section className="panel">
+            <h2>{en.attendeeList}</h2>
+            <div className="attendee-list">
+              {state?.attendees.map((a) => (
+                <button
+                  key={a.userId}
+                  data-user-id={a.userId}
+                  onClick={() => {
+                    setUserId(a.userId);
+                    setName(a.username);
+                  }}
+                >
+                  <b>{a.username}</b>
+                  <small>
+                    {a.userId} · {a.gender} · {a.admission} ·{" "}
+                    {a.seat === null ? en.noSeat : `${en.seat} ${a.seat}`}
+                  </small>
+                </button>
+              ))}
+            </div>
+          </section>
           <section className="panel reset-panel">
             <h2>{en.reset}</h2>
             <p>{en.resetNote}</p>
@@ -414,14 +528,6 @@ export function ControlView() {
 }
 export function App() {
   useEffect(connectSession, []);
-  const active = useSession((s) => s.snapshot?.active);
-  useEffect(() => {
-    if (
-      active &&
-      (active.event.giftKey === "bell_10" ||
-        active.event.giftKey === "ceremony_500")
-    )
-      playBell(active.event.eventId);
-  }, [active?.event.eventId]);
+  useSceneAudio();
   return location.pathname === "/control" ? <ControlView /> : <LiveView />;
 }

@@ -1,7 +1,7 @@
 {
   "name": "chapel-hope-live",
   "private": true,
-  "version": "1.3.0",
+  "version": "1.4.0",
   "workspaces": [
     "apps/*",
     "packages/*"
@@ -14,10 +14,9 @@
     "build": "npm run typecheck && npm run build -w @chapel/client && npm run build -w @chapel/server",
     "typecheck": "tsc --noEmit",
     "test": "tsx --test tests/*.test.ts",
-    "test:browser": "tsx scripts/browser-smoke.ts",
+    "test:browser": "node --import tsx scripts/queue-browser.ts",
     "start": "npm run start -w @chapel/server",
-    "test:visual": "node --import tsx scripts/visual-stage.ts",
-    "test:visual:legacy": "node --import tsx scripts/visual-v12.ts",
+    "test:visual": "node --import tsx scripts/queue-browser.ts",
     "build:preview": "node scripts/build-preview.mjs",
     "test:preview": "node --import tsx scripts/preview-smoke.ts"
   },

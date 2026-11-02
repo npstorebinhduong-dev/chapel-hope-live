@@ -85,12 +85,13 @@ await writeFile(
 
 1. Giải nén toàn bộ ZIP.
 2. Mở index.html bằng Chrome hoặc Microsoft Edge (nhấp đúp hoặc Open with).
-3. Cảnh có sẵn 50 khách mẫu + 16 NPC. Dùng bảng bên cạnh để thử AMEN,
+3. Cảnh có sẵn 50 khách ở hàng chờ + 16 NPC trong ghế. Dùng bảng bên cạnh để thử AMEN,
    20/50/100 khách, sáu quà, chất lượng, âm thanh và reset.
 4. Bấm Enable audio, bỏ Mute sound để thử chuông.
 5. “Mở khung LIVE sạch” mở một phiên mẫu riêng, không đồng bộ với tab điều khiển.
    Hãy dùng bảng bên cạnh cảnh trong cùng trang khi cần kiểm tra sự kiện.
-6. Tải lại trang sẽ khởi tạo lại 50 khách mẫu. Mỗi tab là một phiên độc lập.
+6. Comment 1 chọn nhân vật nam, 2 chọn nữ. Chỉ gift của người đó mới cho vào ghế.
+7. Tải lại trang sẽ khởi tạo lại 50 khách đang chờ. Mỗi tab là một phiên độc lập.
 
 KHÔNG cần Node.js, npm, máy chủ, Internet hoặc kết nối TikTok.
 Tất cả JavaScript, CSS và hình ảnh đã nhúng trong index.html.

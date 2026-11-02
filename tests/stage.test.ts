@@ -55,3 +55,13 @@ test("all gift camera effects are bounded and reset even after delayed snapshots
     });
   }
 });
+
+test("foyer-to-aisle projection has no position or scale discontinuity", () => {
+  for (const z of [5.1, 7.8, 18, 20.4]) {
+    const before = projectStage(-3, z - 0.0001),
+      after = projectStage(-3, z + 0.0001);
+    assert.ok(Math.abs(before.x - after.x) < 0.0001);
+    assert.ok(Math.abs(before.y - after.y) < 0.0001);
+    assert.ok(Math.abs(before.height - after.height) < 0.0001);
+  }
+});

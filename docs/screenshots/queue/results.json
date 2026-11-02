@@ -1,0 +1,60 @@
+{
+  "result": "passed",
+  "acceptance": {
+    "AMEN": 50,
+    "gifters": 5,
+    "waiting": 45,
+    "inside": 5,
+    "seated": 5,
+    "npcsExcluded": true
+  },
+  "stress": {
+    "AMEN": 100,
+    "gifts": 20,
+    "inside": 20,
+    "waiting": 80
+  },
+  "observedGifts": [
+    "candle_1",
+    "altar_100",
+    "bell_10",
+    "prayer_5",
+    "rose_5",
+    "ceremony_500"
+  ],
+  "audio": {
+    "audible": {
+      "contextTime": 0.39183673469387753,
+      "chord": 0,
+      "running": true,
+      "voices": 0,
+      "level": 0.014698084636192207,
+      "triggers": 0
+    },
+    "sfx": {
+      "contextTime": 50.66013605442177,
+      "chord": 0,
+      "running": true,
+      "voices": 3,
+      "level": 0.013009233511756632,
+      "triggers": 1
+    },
+    "muted": {
+      "contextTime": 52.46258503401361,
+      "chord": 0,
+      "running": true,
+      "voices": 3,
+      "level": 0,
+      "triggers": 1
+    },
+    "loopSeconds": 50.361179138321994,
+    "loopChords": [
+      0,
+      1,
+      2,
+      3
+    ]
+  },
+  "errors": [],
+  "notes": "Production UI/HTTP/WebSocket. Deterministic server clock jumps between complete journey boundaries for long gift queues; separate arrival captures show motion. Audio uses a real browser AudioContext with analyser signal; not a subjective speaker-quality review."
+}
