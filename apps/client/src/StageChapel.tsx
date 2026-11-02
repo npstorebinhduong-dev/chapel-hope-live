@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import {
   attendeePose,
+  isAttendeeMoving,
   type Attendee,
   type ActiveGift,
   LIMITS,
@@ -459,14 +460,7 @@ export function StageChapel() {
                 }
               : attendeePose(a, now, event);
           const p = projectStage(pose.position[0], pose.position[2]);
-          const walking =
-            [
-              "walking_to_seat",
-              "walking_from_queue",
-              "walking_in_aisle",
-              "returning",
-              "leaving",
-            ].includes(pose.state) && !!a.journey;
+          const walking = isAttendeeMoving(a, now);
           const target = walking
             ? 3
             : pose.state === "kneeling"

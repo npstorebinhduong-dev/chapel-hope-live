@@ -15,6 +15,7 @@ Inside chỉ đếm sau khi avatar đi qua cổng khỏi hàng chờ; Entering l
 - Hai hàng serpentine, 12 slot vẽ chi tiết. Người vượt giới hạn còn nguyên trong engine và có `+N waiting`; không vẽ đè 100 avatar tại một điểm.
 - Tên rút gọn, giới hạn chiều rộng theo slot. Caption hàng chờ tách khỏi tên; HUD quà lên khu trên để không che vùng chờ hay bàn thờ/chủ sự.
 - Chỉ compact sau khi donor ra khỏi cổng; dịch slot 1,2 giây theo easing. Một hành trình dùng lối đi tại một thời điểm, reservation atomic, không xuyên hàng ghế.
+- Animation và bước chân dùng chung `isAttendeeMoving`: cả lúc hàng chờ tiến lên, ngừng bước trong pha FX.
 - Controller dùng vị trí world liên tục, acceleration/deceleration, bước theo quãng đường. Đổi pose 0,45 giây, ngoại hình 0,65 giây, fade xuất hiện/rời và idle lệch pha.
 - Ghép các pose/appearance vào một tile alpha riêng, rồi vẽ một lần; tránh làm alpha giảm xuống 0,75 ở giữa crossfade gây nháy. Có bài test tính liên tục của phép chiếu qua ranh giới tiền sảnh/lối đi.
 - TTL hàng chờ fade-out không đi vào ghế. AMEN khi người trong nhà thờ đang rời tạo đường quay ngược liên tục, giữ cùng người/ghế.
@@ -60,9 +61,13 @@ Nhịp bước và âm nhỏ có throttle; tối đa 24 voice SFX, dọn onended
 ## Kết quả kiểm thử thực tế
 
 - `npm run typecheck` / `npm run build`: đạt. Có cảnh báo PURE annotation của Zod/Rollup như bản trước, không làm build thất bại.
-- `npm test`: **26/26 đạt**. Parser, gender trước/sau AMEN, trì hoãn appearance khi đang đi, chỉ gift mới cấp ghế, ghế đầy, dedup/retry, 50+5, 100+20, TTL, quay lại trong lúc rời, collision hàng chờ/đường đi, phép chiếu liên tục, HTTP/WS, adapter repeat đều được kiểm tra.
+- `npm test`: **27/27 đạt**. Parser, gender trước/sau AMEN, trì hoãn appearance khi đang đi, chỉ gift mới cấp ghế, ghế đầy, dedup/retry, 50+5, 100+20, TTL, quay lại trong lúc rời, collision hàng chờ/đường đi, phép chiếu liên tục, HTTP/WS, adapter repeat đều được kiểm tra.
 - `npm run test:browser`: đạt trên hai route production; **50 AMEN + 5 gifters = 45 Waiting, 5 Inside, 5 Seated**, NPC không tính. 100 AMEN + 20 gift = 80 Waiting, 20 Inside, không mất gift. Đã quan sát đủ sáu giftKey, kiểm tra full-seat và camera về 1,0000. Không có page/console error.
-- AudioContext thật: chạy khoảng **50,36 giây**, qua các hợp âm 0→1→2→3→0 của chu kỳ 48 giây. RMS nền khi bật khoảng **0,0147**, chuông có **3 voice** hoạt động, master mute đưa RMS về **0**. Đây là đo tín hiệu graph, không phải đánh giá chất lượng nghe bằng tai trên loa máy phát. Không có file nhạc ngoài.
+- AudioContext thật: chạy khoảng **50,26 giây**, qua các hợp âm 0→1→2→3→0 của chu kỳ 48 giây. RMS nền khi bật khoảng **0,0406**, chuông có **3 voice** hoạt động, master mute đưa RMS về **0**. Đây là đo tín hiệu graph, không phải đánh giá chất lượng nghe bằng tai trên loa máy phát. Không có file nhạc ngoài.
 - `npm run build:preview` / `npm run test:preview`: đạt. Tài liệu HTML tự chứa khởi tạo 50 người **đang chờ**, kiểm tra AMEN/dedup, burst 20/50/100, phát sáu quà theo thời gian thực, offerings, camera, chất lượng, reset và khung sạch. Không phát sinh HTTP/WS ngoài tài liệu. Storage bị chặn vẫn chạy. Chromium cloud chặn điều hướng `file://` bởi policy; bài test đã ghi rõ dùng HTML local được intercept, không backend. Chưa kiểm chứng double-click trên máy Windows của người dùng.
 
 Nguồn số liệu: [results.json](screenshots/queue/results.json), [HTML preview results](screenshots/queue/html-preview-results.json). [Ảnh 9:16](screenshots/queue/README.md) chứa đầy đủ các trạng thái yêu cầu. Không đo lại FPS hardware trong phiên này và không tuyên bố LIVE-ready cho mọi máy.
+
+## Trạng thái bàn giao
+
+Mã nguồn được push lên `feat/gift-entry-queue`; nhánh nền 2,5D được giữ nguyên. Đã thử tạo PR vào `feat/chapel-live-2-5d` bằng GitHub CLI, nhưng GitHub API GraphQL trả `Forbidden`. Vì vậy chưa có PR được tạo; nội dung PR đã chuẩn bị ở `docs/PULL_REQUEST_QUEUE_LOGIC.md`. Git push vẫn hoạt động.

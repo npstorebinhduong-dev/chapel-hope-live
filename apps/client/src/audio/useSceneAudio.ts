@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { attendeePose } from "@chapel/shared";
+import { attendeePose, isAttendeeMoving } from "@chapel/shared";
 import { renderClock, useSession } from "../store";
 import { useAudioSettings } from "./settings";
 import { chapelAudio } from "./runtime";
@@ -26,20 +26,15 @@ export function useSceneAudio() {
           chapelAudio.quiet("seat");
         if (
           before === "seated" &&
-          ["walking_in_aisle", "returning"].includes(pose.state)
-        )
-          chapelAudio.quiet("stand");
-        if (
-          pose.visible &&
           [
+            "called_by_gift",
             "walking_in_aisle",
-            "walking_from_queue",
             "returning",
             "leaving",
-          ].includes(pose.state) &&
-          a.journey
+          ].includes(pose.state)
         )
-          walking = true;
+          chapelAudio.quiet("stand");
+        if (pose.visible && isAttendeeMoving(a, now)) walking = true;
         previous.set(a.userId, pose.state);
       }
       for (const id of previous.keys()) if (!ids.has(id)) previous.delete(id);

@@ -159,3 +159,22 @@ export function attendeePose(
     visible: a.overflow === null || a.overflow < 8,
   };
 }
+
+/** Shared animation/audio gate: no stepping while idle or during the gift pose. */
+export function isAttendeeMoving(a: Attendee, now: number): boolean {
+  const j = a.journey;
+  if (j) {
+    if (now >= j.startAt && now < j.actionAt)
+      return pathLength(j.approach) > 0.01;
+    if (now >= j.actionUntil && now < j.endAt)
+      return pathLength(j.departure) > 0.01;
+    return false;
+  }
+  const q = a.queueMotion;
+  return (
+    !!q &&
+    now >= q.startAt &&
+    now < q.endAt &&
+    Math.hypot(q.from[0] - q.to[0], q.from[2] - q.to[2]) > 0.01
+  );
+}

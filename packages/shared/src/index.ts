@@ -264,6 +264,7 @@ export function alongPath(points: Vec3[], progress: number): Vec3 {
 }
 export {
   attendeePose,
+  isAttendeeMoving,
   waitingPosition,
   waitingPose,
   walkDuration,

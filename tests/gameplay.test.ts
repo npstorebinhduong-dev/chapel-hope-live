@@ -9,6 +9,7 @@ import {
   parseComment,
   LIMITS,
   attendeePose,
+  isAttendeeMoving,
   waitingPosition,
   type GiftEvent,
   type GiftKey,
@@ -479,4 +480,22 @@ test("donor and visible waiting avatars retain physical separation during exit, 
         );
       }
   }
+});
+
+test("walking animation/audio follows line reflow and pauses during gift actions", () => {
+  const e = new ChapelEngine();
+  populate(e, 20);
+  const waiter = e.attendees.get("u1")!;
+  assert.equal(isAttendeeMoving(waiter, now), false);
+  e.gift(gift("candle_1", "u0"));
+  const donor = e.attendees.get("u0")!,
+    j = donor.journey!;
+  assert.equal(isAttendeeMoving(donor, j.startAt - 1), false);
+  assert.equal(isAttendeeMoving(donor, j.startAt + 100), true);
+  assert.equal(isAttendeeMoving(donor, j.actionAt + 100), false);
+  assert.equal(isAttendeeMoving(donor, j.actionUntil + 100), true);
+  e.tick(j.entryAt! + 1);
+  assert.equal(waiter.admission, "waiting");
+  assert.equal(isAttendeeMoving(waiter, j.entryAt! + 100), true);
+  assert.equal(isAttendeeMoving(waiter, j.entryAt! + 1500), false);
 });
